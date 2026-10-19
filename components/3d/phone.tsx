@@ -5,9 +5,10 @@ import { useFrame } from "@react-three/fiber"
 import * as THREE from "three"
 
 export function Phone(props) {
-  const group = useRef()
+  const group = useRef<THREE.Group>(null)
 
   useFrame((state) => {
+    if (!group.current) return
     const t = state.clock.getElapsedTime()
     group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, Math.sin(t / 2) / 10, 0.05)
     group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, Math.sin(t) / 10, 0.05)

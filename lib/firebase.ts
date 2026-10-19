@@ -4,12 +4,12 @@ import { getFirestore } from "firebase/firestore"
 import { getStorage } from "firebase/storage"
 
 export const firebaseConfig = {
-  apiKey: "AIzaSyBC2NH-qlzxxIjy6PY94JaZRh5d0jpZjbo",
-  authDomain: "fundacao-tony-bana.firebaseapp.com",
-  projectId: "fundacao-tony-bana",
-  storageBucket: "fundacao-tony-bana.firebasestorage.app",
-  messagingSenderId: "988372046789",
-  appId: "1:988372046789:web:f1d03331fc5e2b409471ac",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyBC2NH-qlzxxIjy6PY94JaZRh5d0jpZjbo",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "fundacao-tony-bana.firebaseapp.com",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "fundacao-tony-bana",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "fundacao-tony-bana.firebasestorage.app",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "988372046789",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:988372046789:web:f1d03331fc5e2b409471ac",
 }
 
 // Initialize Firebase
