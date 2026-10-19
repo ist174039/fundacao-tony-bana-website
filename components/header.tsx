@@ -85,9 +85,10 @@ export default function Header() {
             <Image
               src="/logo.jpg"
               alt="Fundação Tony Bana"
-              width={70}
-              height={70}
-              className="rounded-full ring-1 ring-border transition-all group-hover:ring-primary/70"
+              width={280}
+              height={184}
+              priority
+              className="h-14 w-[5.25rem] object-contain transition-transform group-hover:scale-[1.03] sm:h-16 sm:w-24"
             />
           </motion.div>
           <span className="flex flex-col font-montserrat font-semibold leading-tight transition-colors group-hover:text-primary">

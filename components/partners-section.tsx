@@ -19,6 +19,7 @@ const initials = (name: string) =>
 
 export default function PartnersSection() {
   const [partners, setPartners] = useState<Parceiro[]>([]);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -45,24 +46,34 @@ export default function PartnersSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="mb-10 max-w-3xl md:mb-12"
+          className="mb-10 flex max-w-3xl flex-col gap-5 md:mb-12 md:flex-row md:items-end md:justify-between"
         >
-          <p className="mb-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-            <Handshake className="h-4 w-4" aria-hidden="true" /> Juntos fazemos
-            mais
-          </p>
-          <h2 className="font-montserrat text-3xl font-bold tracking-tight text-balance md:text-5xl">
-            Parceiros que{" "}
-            <span className="text-primary">fortalecem a missão</span>
-          </h2>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground md:text-lg">
-            Organizações que caminham connosco e contribuem para o trabalho da
-            Fundação.
-          </p>
+          <div>
+            <p className="mb-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+              <Handshake className="h-4 w-4" aria-hidden="true" /> Juntos
+              fazemos mais
+            </p>
+            <h2 className="font-montserrat text-3xl font-bold tracking-tight text-balance md:text-5xl">
+              Parceiros que{" "}
+              <span className="text-primary">fortalecem a missão</span>
+            </h2>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground md:text-lg">
+              Organizações que apoiam a missão da Fundação.
+            </p>
+          </div>
+          {partners.length > 3 && (
+            <Button
+              variant="outline"
+              className="w-fit shrink-0 rounded-full px-5"
+              onClick={() => setShowAll((value) => !value)}
+            >
+              {showAll ? "Mostrar menos" : "Ver mais parceiros"}
+            </Button>
+          )}
         </motion.div>
 
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          {partners.map((partner, index) => (
+          {(showAll ? partners : partners.slice(0, 3)).map((partner, index) => (
             <motion.div
               key={partner.id}
               initial={{ opacity: 0, y: 18 }}
@@ -95,7 +106,7 @@ export default function PartnersSection() {
                       {partner.nome}
                     </h3>
                     {partner.descricao && (
-                      <p className="mt-3 flex-1 text-sm leading-6 text-muted-foreground">
+                      <p className="mt-3 line-clamp-2 flex-1 text-sm leading-6 text-muted-foreground">
                         {partner.descricao}
                       </p>
                     )}
