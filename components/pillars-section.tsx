@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { Card, CardContent } from "@/components/ui/card"
-import { BookOpen, Heart, Users, Trophy, Sparkles } from "lucide-react"
-import { motion } from "framer-motion"
+import { Card, CardContent } from "@/components/ui/card";
+import { BookOpen, Heart, Users, Trophy, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
 
 const pillars = [
   {
@@ -35,7 +35,7 @@ const pillars = [
     description:
       "Criar espaços e programas que abracem a diversidade e garantam a igualdade de oportunidades para todos.",
   },
-]
+];
 
 export default function PillarsSection() {
   return (
@@ -50,7 +50,8 @@ export default function PillarsSection() {
         >
           <p className="mono-label mb-4 text-accent">02 / Como trabalhamos</p>
           <h2 className="mb-4 font-montserrat text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
-            Um trabalho com <span className="text-primary">várias frentes.</span>
+            Um trabalho com{" "}
+            <span className="text-primary">várias frentes.</span>
           </h2>
           <p className="max-w-2xl text-lg text-muted-foreground">
             Apoiamos através de programas focados e inclusivos.
@@ -65,9 +66,11 @@ export default function PillarsSection() {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
             >
-              <Card className="group h-full rounded-2xl border border-white/10 bg-card/70 transition-all duration-300 hover:-translate-y-1 hover:border-primary/60 hover:bg-card hover:shadow-xl hover:shadow-black/20">
+              <Card className="group h-full rounded-2xl border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-foreground/10">
                 <CardContent className="p-6 md:p-7">
-                  <p className="mono-label mb-5 text-muted-foreground">Área 0{index + 1}</p>
+                  <p className="mono-label mb-5 text-muted-foreground">
+                    Área 0{index + 1}
+                  </p>
                   <motion.div
                     whileHover={{ scale: 1.1, rotate: 5 }}
                     transition={{ type: "spring", stiffness: 300 }}
@@ -78,7 +81,9 @@ export default function PillarsSection() {
                   <h3 className="text-xl font-semibold mb-3 font-montserrat group-hover:text-primary transition-colors">
                     {pillar.title}
                   </h3>
-                  <p className="text-muted-foreground leading-relaxed">{pillar.description}</p>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {pillar.description}
+                  </p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -86,5 +91,5 @@ export default function PillarsSection() {
         </div>
       </div>
     </section>
-  )
+  );
 }

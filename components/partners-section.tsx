@@ -1,94 +1,121 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { ExternalLink } from "lucide-react"
-import { motion } from "framer-motion"
-import Image from "next/image"
-import { getCollection, COLLECTIONS, Parceiro } from "@/lib/firebase-firestore"
+import { useEffect, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ArrowUpRight, Handshake } from "lucide-react";
+import { motion } from "framer-motion";
+import Image from "next/image";
+import { getCollection, COLLECTIONS, Parceiro } from "@/lib/firebase-firestore";
+
+const initials = (name: string) =>
+  name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
 
 export default function PartnersSection() {
-  const [partners, setPartners] = useState<Parceiro[]>([])
+  const [partners, setPartners] = useState<Parceiro[]>([]);
 
   useEffect(() => {
-    let mounted = true
+    let mounted = true;
     getCollection<Parceiro>(COLLECTIONS.PARCEIROS)
       .then((items) => {
-        if (!mounted) return
-        setPartners(items)
+        if (mounted) setPartners(items);
       })
-      .catch((err) => console.error(err))
+      .catch((err) => console.error(err));
     return () => {
-      mounted = false
-    }
-  }, [])
+      mounted = false;
+    };
+  }, []);
 
-  if (partners.length === 0) return null
+  if (!partners.length) return null;
 
   return (
-    <section id="parceiros" className="border-y border-white/5 bg-white/[0.02] py-20 md:py-28">
+    <section
+      id="parceiros"
+      className="border-y border-border/60 bg-muted/30 py-20 md:py-28"
+    >
       <div className="container">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mb-12 max-w-3xl"
+          transition={{ duration: 0.5 }}
+          className="mb-10 max-w-3xl md:mb-12"
         >
-          <p className="mono-label mb-4 text-accent">03 / Em conjunto</p>
-          <h2 className="mb-4 font-montserrat text-3xl font-bold text-balance md:text-5xl">
-            Parcerias que <span className="text-primary">fortalecem.</span>
+          <p className="mb-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+            <Handshake className="h-4 w-4" aria-hidden="true" /> Juntos fazemos
+            mais
+          </p>
+          <h2 className="font-montserrat text-3xl font-bold tracking-tight text-balance md:text-5xl">
+            Parceiros que{" "}
+            <span className="text-primary">fortalecem a missão</span>
           </h2>
-          <p className="max-w-2xl text-lg text-muted-foreground text-pretty">
-            Trabalhamos em conjunto com organizações que compartilham nossa visão de transformação social
+          <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground md:text-lg">
+            Organizações que caminham connosco e contribuem para o trabalho da
+            Fundação.
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {partners.map((partner, index) => (
             <motion.div
               key={partner.id}
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 18 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: index * 0.2 }}
+              transition={{ duration: 0.4, delay: (index % 3) * 0.08 }}
             >
-              <Card className="h-full rounded-2xl border border-white/10 bg-card/70 transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-xl hover:shadow-black/20">
-                <CardContent className="p-8">
-                  <div className="mb-6 flex items-center justify-center">
+              <Card className="group h-full overflow-hidden rounded-3xl border-border/70 bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/25 hover:shadow-lg hover:shadow-primary/5">
+                <CardContent className="flex h-full flex-col p-5 sm:p-6">
+                  <div className="mb-5 flex min-h-[9rem] items-center justify-center rounded-2xl border border-border/60 bg-background p-6">
                     {partner.logo ? (
-                      <div className="w-80 h-40 flex items-center justify-center bg-white p-2 rounded-md overflow-hidden">
-                        <a href={partner.website || '#'} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
-                          <Image
-                            src={partner.logo}
-                            alt={partner.nome}
-                            width={320}
-                            height={160}
-                            className="object-contain w-full h-full"
-                          />
-                        </a>
-                      </div>
+                      <Image
+                        src={partner.logo}
+                        alt={`Logótipo de ${partner.nome}`}
+                        width={320}
+                        height={160}
+                        className="max-h-24 w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+                      />
                     ) : (
-                      <div className="w-40 h-20 flex items-center justify-center bg-muted rounded-md">
-                        <span className="text-sm text-muted-foreground">
-                          {partner.nome?.split(" ")
-                            .slice(0, 2)
-                            .map((n) => n?.[0])
-                            .join("") || "PT"}
-                        </span>
+                      <div
+                        className="grid h-16 w-16 place-items-center rounded-2xl bg-primary/10 text-lg font-bold text-primary ring-1 ring-primary/10"
+                        aria-label={`Iniciais de ${partner.nome}`}
+                      >
+                        {initials(partner.nome)}
                       </div>
                     )}
                   </div>
-                  <h3 className="font-montserrat text-2xl font-bold mb-4 text-primary">{partner.nome}</h3>
-                  <p className="text-foreground mb-4 leading-relaxed">{partner.descricao}</p>
-                  <p className="text-muted-foreground text-sm mb-6 leading-relaxed">{partner.website}</p>
-                  <Button variant="outline" className="group bg-transparent" asChild>
-                    <a href={partner.website || "#"} target="_blank" rel="noopener noreferrer">
-                      Visitar Website
-                      <ExternalLink className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                    </a>
-                  </Button>
+                  <div className="flex flex-1 flex-col">
+                    <h3 className="font-montserrat text-xl font-bold leading-snug text-foreground">
+                      {partner.nome}
+                    </h3>
+                    {partner.descricao && (
+                      <p className="mt-3 flex-1 text-sm leading-6 text-muted-foreground">
+                        {partner.descricao}
+                      </p>
+                    )}
+                    {partner.website && (
+                      <Button
+                        variant="outline"
+                        className="group/link mt-5 w-fit rounded-full px-4"
+                        asChild
+                      >
+                        <a
+                          href={partner.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Visitar website
+                          <ArrowUpRight className="ml-2 h-4 w-4 transition-transform group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5" />
+                        </a>
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -96,5 +123,5 @@ export default function PartnersSection() {
         </div>
       </div>
     </section>
-  )
+  );
 }

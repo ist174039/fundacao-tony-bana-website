@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import Image from "next/image"
-import { motion } from "framer-motion"
-import { Facebook, Instagram, Twitter, Linkedin } from "lucide-react"
+import Image from "next/image";
+import { motion } from "framer-motion";
+import { Facebook, Instagram, Twitter, Linkedin } from "lucide-react";
 import { FaTiktok } from "react-icons/fa";
 
 export default function Footer() {
@@ -17,7 +17,10 @@ export default function Footer() {
             transition={{ duration: 0.6 }}
             className="flex flex-col items-center md:items-start gap-4"
           >
-            <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 300 }}>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
               <Image
                 src="/logo.jpg"
                 alt="Fundação Tony Bana"
@@ -38,25 +41,27 @@ export default function Footer() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="flex flex-col items-center md:items-start"
           >
-            <h3 className="font-montserrat font-semibold mb-4">Links Rápidos</h3>
+            <h3 className="font-montserrat font-semibold mb-4">
+              Links Rápidos
+            </h3>
             <nav className="flex flex-col gap-2 text-sm">
-              <a href="#missao" className="text-muted-foreground hover:text-primary transition-colors">
+              <a
+                href="#missao"
+                className="text-muted-foreground hover:text-primary transition-colors"
+              >
                 Sobre
               </a>
-              <a href="#pilares" className="text-muted-foreground hover:text-primary transition-colors">
+              <a
+                href="#pilares"
+                className="text-muted-foreground hover:text-primary transition-colors"
+              >
                 Pilares
               </a>
-              <a href="#membros" className="text-muted-foreground hover:text-primary transition-colors">
-                Membros
-              </a>
-               <a href="#carrossel" className="text-muted-foreground hover:text-primary transition-colors">
-                Galeria
-              </a>
-              <a href="#noticias" className="text-muted-foreground hover:text-primary transition-colors">
-                Notícias
-              </a>
-              <a href="#parceiros" className="text-muted-foreground hover:text-primary transition-colors">
-                Parceiros
+              <a
+                href="#contato"
+                className="text-muted-foreground hover:text-primary transition-colors"
+              >
+                Contacto
               </a>
             </nav>
           </motion.div>
@@ -68,7 +73,9 @@ export default function Footer() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="flex flex-col items-center md:items-start"
           >
-            <h3 className="font-montserrat font-semibold mb-4">Redes Sociais</h3>
+            <h3 className="font-montserrat font-semibold mb-4">
+              Redes Sociais
+            </h3>
             <div className="flex gap-3">
               <motion.a
                 whileHover={{ scale: 1.2, rotate: 5 }}
@@ -103,7 +110,10 @@ export default function Footer() {
           className="border-t pt-8"
         >
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-            <p>© {new Date().getFullYear()} Fundação Tony Bana. Todos os direitos reservados.</p>
+            <p>
+              © {new Date().getFullYear()} Fundação Tony Bana. Todos os direitos
+              reservados.
+            </p>
             <p>
               Powered by{" "}
               <a
@@ -119,5 +129,5 @@ export default function Footer() {
         </motion.div>
       </div>
     </footer>
-  )
+  );
 }

@@ -3,28 +3,27 @@
 @tailwind utilities;
 
 @layer base {
-  :root,
-  .dark {
-    color-scheme: dark;
-    --background: 150 8% 5%;
-    --foreground: 42 28% 94%;
-    --card: 150 7% 8%;
-    --card-foreground: 42 28% 94%;
-    --popover: 150 7% 8%;
-    --popover-foreground: 42 28% 94%;
-    --primary: 344 55% 48%;
+  :root {
+    color-scheme: light;
+    --background: 42 35% 98%;
+    --foreground: 158 18% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 158 18% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 158 18% 15%;
+    --primary: 344 56% 38%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 150 6% 12%;
-    --secondary-foreground: 42 28% 94%;
-    --muted: 150 6% 12%;
-    --muted-foreground: 150 6% 66%;
-    --accent: 37 39% 62%;
-    --accent-foreground: 150 8% 5%;
-    --destructive: 0 68% 54%;
+    --secondary: 40 32% 94%;
+    --secondary-foreground: 158 18% 15%;
+    --muted: 40 24% 95%;
+    --muted-foreground: 155 8% 42%;
+    --accent: 38 55% 42%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 68% 48%;
     --destructive-foreground: 0 0% 100%;
-    --border: 150 7% 19%;
-    --input: 150 7% 19%;
-    --ring: 344 55% 58%;
+    --border: 38 16% 86%;
+    --input: 38 16% 82%;
+    --ring: 344 56% 45%;
     --radius: 0.85rem;
   }
 
@@ -39,8 +38,12 @@
   body {
     @apply bg-background text-foreground antialiased;
     background-image:
-      radial-gradient(ellipse at 80% -8%, hsl(var(--primary) / 0.15), transparent 38rem),
-      linear-gradient(180deg, hsl(150 8% 6%), hsl(var(--background)) 30rem);
+      radial-gradient(
+        ellipse at 78% 0%,
+        hsl(var(--primary) / 0.055),
+        transparent 38rem
+      ),
+      linear-gradient(180deg, hsl(42 35% 99%), hsl(var(--background)) 36rem);
     min-height: 100vh;
   }
 }
@@ -55,8 +58,13 @@
   }
 
   .site-grid {
-    background-image: linear-gradient(hsl(0 0% 100% / 0.035) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(0 0% 100% / 0.035) 1px, transparent 1px);
+    background-image:
+      linear-gradient(hsl(var(--foreground) / 0.035) 1px, transparent 1px),
+      linear-gradient(
+        90deg,
+        hsl(var(--foreground) / 0.035) 1px,
+        transparent 1px
+      );
     background-size: 72px 72px;
     mask-image: linear-gradient(to bottom, black, transparent 88%);
   }
@@ -66,6 +74,6 @@
   }
 
   .surface-panel {
-    @apply rounded-2xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/20 backdrop-blur-sm;
+    @apply rounded-2xl border border-border bg-card shadow-xl shadow-foreground/10 backdrop-blur-sm;
   }
 }
