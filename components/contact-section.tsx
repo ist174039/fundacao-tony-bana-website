@@ -24,19 +24,20 @@ export default function ContactSection() {
   }
 
   return (
-    <section id="contato" className="py-20 bg-muted/30">
+    <section id="contato" className="py-20 md:py-28">
       <div className="container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-12"
+          className="mb-12 max-w-3xl"
         >
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl font-montserrat mb-4">
-            Entre em <span className="text-primary">Contato</span>
+          <p className="mono-label mb-4 text-accent">04 / Fale connosco</p>
+          <h2 className="mb-4 font-montserrat text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
+            Vamos conversar sobre <span className="text-primary">oportunidades.</span>
           </h2>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+          <p className="max-w-2xl text-lg text-muted-foreground">
             Tem alguma dúvida ou quer se juntar a nós? Envie-nos uma mensagem.
           </p>
         </motion.div>
@@ -54,7 +55,7 @@ export default function ContactSection() {
               <div className="space-y-4">
                 <motion.div
                   whileHover={{ x: 10 }}
-                  className="flex items-start gap-4 p-4 rounded-lg bg-background hover:shadow-md transition-shadow"
+                  className="flex items-start gap-4 rounded-xl border border-white/10 bg-card/70 p-4 transition-colors hover:border-primary/40"
                 >
                   <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                     <Mail className="h-5 w-5 text-primary" />
@@ -67,7 +68,7 @@ export default function ContactSection() {
 
                 <motion.div
                   whileHover={{ x: 10 }}
-                  className="flex items-start gap-4 p-4 rounded-lg bg-background hover:shadow-md transition-shadow"
+                  className="flex items-start gap-4 rounded-xl border border-white/10 bg-card/70 p-4 transition-colors hover:border-primary/40"
                 >
                   <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                     <Phone className="h-5 w-5 text-primary" />
@@ -80,7 +81,7 @@ export default function ContactSection() {
 
                 <motion.div
                   whileHover={{ x: 10 }}
-                  className="flex items-start gap-4 p-4 rounded-lg bg-background hover:shadow-md transition-shadow"
+                  className="flex items-start gap-4 rounded-xl border border-white/10 bg-card/70 p-4 transition-colors hover:border-primary/40"
                 >
                   <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                     <Phone className="h-5 w-5 text-primary" />
@@ -93,7 +94,7 @@ export default function ContactSection() {
 
                 <motion.div
                   whileHover={{ x: 10 }}
-                  className="flex items-start gap-4 p-4 rounded-lg bg-background hover:shadow-md transition-shadow"
+                  className="flex items-start gap-4 rounded-xl border border-white/10 bg-card/70 p-4 transition-colors hover:border-primary/40"
                 >
                   <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                     <MapPin className="h-5 w-5 text-primary" />
@@ -113,7 +114,7 @@ export default function ContactSection() {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <Card className="border-2 hover:border-primary/50 transition-colors">
+            <Card className="rounded-2xl border border-white/10 bg-card/70 transition-colors hover:border-primary/40">
               <CardContent className="pt-6">
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-2">

@@ -36,13 +36,16 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
-      <Card className="w-full max-w-md">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background p-4 text-foreground">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top, hsl(var(--primary)/0.22), transparent_52%)]" />
+      <Card className="relative w-full max-w-md border-border/70 bg-card shadow-2xl shadow-black/30">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <Image src="/logo.jpg" alt="Fundação Tony Bana" width={100} height={100} className="rounded-full" />
           </div>
-          <CardTitle className="text-2xl font-montserrat">Acesso Administrativo</CardTitle>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">Área restrita</p>
+          <CardTitle className="text-2xl font-montserrat">Acesso administrativo</CardTitle>
+          <p className="mt-2 text-sm text-muted-foreground">Entre com as suas credenciais para gerir os conteúdos.</p>
         </CardHeader>
         <CardContent>
           {error && <div className="mb-4 p-3 bg-destructive/10 text-destructive text-sm rounded-md">{error}</div>}

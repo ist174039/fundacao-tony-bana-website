@@ -39,19 +39,20 @@ const pillars = [
 
 export default function PillarsSection() {
   return (
-    <section id="pilares" className="py-20">
+    <section id="pilares" className="py-20 md:py-28">
       <div className="container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-12"
+          className="mb-12 max-w-3xl"
         >
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl font-montserrat mb-4">
-            Pilares da <span className="text-primary">Fundação</span>
+          <p className="mono-label mb-4 text-accent">02 / Como trabalhamos</p>
+          <h2 className="mb-4 font-montserrat text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
+            Um trabalho com <span className="text-primary">várias frentes.</span>
           </h2>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+          <p className="max-w-2xl text-lg text-muted-foreground">
             Apoiamos através de programas focados e inclusivos.
           </p>
         </motion.div>
@@ -64,12 +65,13 @@ export default function PillarsSection() {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
             >
-              <Card className="border-2 hover:border-primary transition-all duration-300 hover:shadow-xl hover:-translate-y-2 h-full group">
-                <CardContent className="pt-6">
+              <Card className="group h-full rounded-2xl border border-white/10 bg-card/70 transition-all duration-300 hover:-translate-y-1 hover:border-primary/60 hover:bg-card hover:shadow-xl hover:shadow-black/20">
+                <CardContent className="p-6 md:p-7">
+                  <p className="mono-label mb-5 text-muted-foreground">Área 0{index + 1}</p>
                   <motion.div
                     whileHover={{ scale: 1.1, rotate: 5 }}
                     transition={{ type: "spring", stiffness: 300 }}
-                    className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-primary-foreground group-hover:shadow-lg"
+                    className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground"
                   >
                     <pillar.icon className="h-6 w-6" />
                   </motion.div>

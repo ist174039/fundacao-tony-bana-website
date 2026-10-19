@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Menu, X } from "lucide-react"
+import { ArrowUpRight, Menu, X } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
 export default function Header() {
@@ -24,25 +24,26 @@ export default function Header() {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.6 }}
-      className={`sticky top-0 z-50 w-full border-b transition-all duration-300 ${
+      className={`sticky top-0 z-50 w-full border-b border-white/10 transition-all duration-300 ${
         scrolled
           ? "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-md"
           : "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
       }`}
     >
       <div className="container flex h-20 items-center justify-between">
-        <Link href="/" className="flex items-center gap-3 group">
+        <Link href="/" className="group flex items-center gap-3">
           <motion.div whileHover={{ scale: 1.05, rotate: 5 }} transition={{ type: "spring", stiffness: 300 }}>
             <Image
               src="/logo.jpg"
               alt="Fundação Tony Bana"
               width={70}
               height={70}
-              className="rounded-full ring-2 ring-primary/20 group-hover:ring-primary/50 transition-all"
+              className="rounded-full ring-1 ring-white/15 transition-all group-hover:ring-primary/70"
             />
           </motion.div>
-          <span className="font-montserrat font-semibold text-xl group-hover:text-primary transition-colors">
-            Fundação Tony Bana
+          <span className="flex flex-col font-montserrat font-semibold leading-tight transition-colors group-hover:text-primary">
+            <span className="text-base sm:text-lg">Fundação Tony Bana</span>
+            <span className="mono-label mt-1 !text-[0.55rem] !tracking-[0.15em] text-muted-foreground">Comunidade · inclusão</span>
           </span>
         </Link>
 
@@ -92,7 +93,11 @@ export default function Header() {
           </Link>
         </nav>
 
-        <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+        <Button asChild className="hidden h-10 rounded-full px-5 md:inline-flex">
+          <a href="#contato">Contactar <ArrowUpRight className="ml-1.5 h-4 w-4" /></a>
+        </Button>
+
+        <Button variant="outline" size="icon" aria-label={isMenuOpen ? "Fechar menu" : "Abrir menu"} className="border-white/15 bg-white/[0.04] md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
           {isMenuOpen ? <X /> : <Menu />}
         </Button>
       </div>

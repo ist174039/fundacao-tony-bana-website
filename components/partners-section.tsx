@@ -27,19 +27,20 @@ export default function PartnersSection() {
   if (partners.length === 0) return null
 
   return (
-    <section id="parceiros" className="py-24 bg-muted/30">
+    <section id="parceiros" className="border-y border-white/5 bg-white/[0.02] py-20 md:py-28">
       <div className="container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="mb-12 max-w-3xl"
         >
-          <h2 className="font-montserrat text-4xl md:text-5xl font-bold mb-4 text-balance">
-            Nossos <span className="text-primary">Parceiros</span>
+          <p className="mono-label mb-4 text-accent">03 / Em conjunto</p>
+          <h2 className="mb-4 font-montserrat text-3xl font-bold text-balance md:text-5xl">
+            Parcerias que <span className="text-primary">fortalecem.</span>
           </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto text-pretty">
+          <p className="max-w-2xl text-lg text-muted-foreground text-pretty">
             Trabalhamos em conjunto com organizações que compartilham nossa visão de transformação social
           </p>
         </motion.div>
@@ -53,7 +54,7 @@ export default function PartnersSection() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: index * 0.2 }}
             >
-              <Card className="h-full hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-2 hover:border-primary/50">
+              <Card className="h-full rounded-2xl border border-white/10 bg-card/70 transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-xl hover:shadow-black/20">
                 <CardContent className="p-8">
                   <div className="mb-6 flex items-center justify-center">
                     {partner.logo ? (

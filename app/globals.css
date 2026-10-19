@@ -3,63 +3,48 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    /* Updated color scheme based on Fundação Tony Bana logo - maroon/burgundy primary */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 10%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
-    --primary: 345 48% 30%; /* Maroon/burgundy from logo */
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 10%;
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
-    --accent: 345 48% 30%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 345 48% 30%;
-    --radius: 0.5rem;
-  }
-
+  :root,
   .dark {
-    --background: 0 0% 10%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 15%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 15%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 345 48% 40%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 20%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 20%;
-    --muted-foreground: 0 0% 65%;
-    --accent: 345 48% 40%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 345 48% 40%;
+    color-scheme: dark;
+    --background: 150 8% 5%;
+    --foreground: 42 28% 94%;
+    --card: 150 7% 8%;
+    --card-foreground: 42 28% 94%;
+    --popover: 150 7% 8%;
+    --popover-foreground: 42 28% 94%;
+    --primary: 344 55% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 150 6% 12%;
+    --secondary-foreground: 42 28% 94%;
+    --muted: 150 6% 12%;
+    --muted-foreground: 150 6% 66%;
+    --accent: 37 39% 62%;
+    --accent-foreground: 150 8% 5%;
+    --destructive: 0 68% 54%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 150 7% 19%;
+    --input: 150 7% 19%;
+    --ring: 344 55% 58%;
+    --radius: 0.85rem;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    background-image:
+      radial-gradient(ellipse at 80% -8%, hsl(var(--primary) / 0.15), transparent 38rem),
+      linear-gradient(180deg, hsl(150 8% 6%), hsl(var(--background)) 30rem);
+    min-height: 100vh;
   }
 }
 
-/* Added custom styles for Fundação Tony Bana website */
 @layer utilities {
   .text-balance {
     text-wrap: balance;
@@ -67,5 +52,20 @@
 
   .text-pretty {
     text-wrap: pretty;
+  }
+
+  .site-grid {
+    background-image: linear-gradient(hsl(0 0% 100% / 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(0 0% 100% / 0.035) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: linear-gradient(to bottom, black, transparent 88%);
+  }
+
+  .mono-label {
+    @apply font-mono text-[0.68rem] font-medium uppercase tracking-[0.2em];
+  }
+
+  .surface-panel {
+    @apply rounded-2xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/20 backdrop-blur-sm;
   }
 }
