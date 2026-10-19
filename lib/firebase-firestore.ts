@@ -1,0 +1,266 @@
+"use client"
+
+import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, Timestamp } from "firebase/firestore"
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage"
+import { db, storage } from "./firebase"
+
+export interface Evento {
+  id: string
+  nome: string
+  tipo: string
+  data: string
+  descricao: string
+  parceiros?: string[]
+  flags?: string[]
+  destaque: boolean
+  imagem?: string
+  galeria?: {
+    imagens?: string[]
+    videos?: string[]
+  }
+}
+
+export interface Programa {
+  id: string
+  nome: string
+  descricao: string
+  data_inicio: string
+  data_fim: string
+  patrocinadores?: string[]
+}
+
+export interface AgendaItem {
+  id: string
+  nome: string
+  tipo: string
+  flag?: string
+  descricao: string
+  data_inicio: string
+  data_fim: string
+  parceiros?: string[]
+  inscricao?: string
+  destaque: boolean
+  galeria?: {
+    imagens?: string[]
+    videos?: string[]
+  }
+}
+
+export interface Noticia {
+  id: string
+  titulo: string
+  data: string
+  descricao: string
+  link: string
+  imagem?: string
+  destaque: boolean
+}
+
+export interface Membro {
+  id: string
+  nome: string
+  cargo: string
+  descricao: string
+  imagem?: string
+}
+
+export interface Parceiro {
+  id: string
+  nome: string
+  descricao: string
+  website?: string
+  logo?: string
+}
+
+export interface CarrosselItem {
+  id: string
+  titulo?: string
+  descricao?: string
+  data?: string
+  imagem?: string
+}
+
+export const COLLECTIONS = {
+  EVENTOS: "eventos",
+  PROGRAMAS: "programas",
+  AGENDA: "agenda",
+  NOTICIAS: "noticias",
+  MEMBROS: "membros",
+  PARCEIROS: "parceiros",
+  CARROSSEL: "carrossel",
+}
+
+// Remove undefined, functions and File objects from payloads before sending to Firestore
+function sanitizeForFirestore(obj: any): any {
+  if (obj === null || obj === undefined) return obj
+  if (typeof obj === "function") return undefined
+  if (obj instanceof File) return undefined
+  if (Array.isArray(obj)) {
+    return obj
+      .map((v) => sanitizeForFirestore(v))
+      .filter((v) => v !== undefined)
+  }
+  if (typeof obj === "object") {
+    const out: any = {}
+    for (const [k, v] of Object.entries(obj)) {
+      if (v === undefined) continue
+      const cleaned = sanitizeForFirestore(v)
+      if (cleaned !== undefined) out[k] = cleaned
+    }
+    return out
+  }
+  return obj
+}
+
+// Return list of problematic paths that are not serializable to Firestore (functions, File, Symbol, BigInt)
+function findNonSerializableFields(obj: any, basePath = ""): string[] {
+  const problems: string[] = []
+  if (obj === null || obj === undefined) return problems
+  if (typeof obj === "function") return [basePath || "<root>"]
+  if (obj instanceof File) return [basePath || "<root>"]
+  if (typeof obj === "symbol" || typeof obj === "bigint") return [basePath || "<root>"]
+  if (Array.isArray(obj)) {
+    obj.forEach((v, i) => {
+      problems.push(...findNonSerializableFields(v, `${basePath}[${i}]`))
+    })
+    return problems
+  }
+  if (typeof obj === "object") {
+    for (const [k, v] of Object.entries(obj)) {
+      if (v === undefined) continue
+      if (typeof v === "function" || v instanceof File || typeof v === "symbol" || typeof v === "bigint") {
+        problems.push(basePath ? `${basePath}.${k}` : k)
+        continue
+      }
+      problems.push(...findNonSerializableFields(v, basePath ? `${basePath}.${k}` : k))
+    }
+  }
+  return problems
+}
+
+// Safe stringify that converts Firestore Timestamp objects to ISO strings when possible
+function safeStringify(obj: any) {
+  return JSON.stringify(obj, (_k, v) => {
+    // detect firebase Timestamp-ish objects
+    if (v && typeof v === "object" && typeof (v as any).toDate === "function") {
+      try {
+        return (v as any).toDate().toISOString()
+      } catch {
+        return String(v)
+      }
+    }
+    return v
+  }, 2)
+}
+
+// Get all documents from a collection
+export async function getCollection<T>(collectionName: string): Promise<T[]> {
+  try {
+    const q = query(collection(db, collectionName))
+    const querySnapshot = await getDocs(q)
+    return querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as T[]
+  } catch (error) {
+    console.error(`Error getting collection ${collectionName}:`, error)
+    throw error
+  }
+}
+
+// Get a single document
+export async function getDocument<T>(collectionName: string, id: string): Promise<T | null> {
+  try {
+    const docRef = doc(db, collectionName, id)
+    const docSnap = await getDoc(docRef)
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() } as T
+    }
+    return null
+  } catch (error) {
+    console.error(`Error getting document ${id} from ${collectionName}:`, error)
+    throw error
+  }
+}
+
+// Add a new document
+export async function addDocument<T>(collectionName: string, data: Partial<T>): Promise<string> {
+  try {
+    const payload = sanitizeForFirestore(data)
+    const problems = findNonSerializableFields(payload)
+    if (problems.length > 0) {
+      console.error(`Payload contains non-serializable fields: ${problems.join(", ")}`)
+      console.error("Payload preview:", safeStringify(payload))
+      throw new Error(`Payload contains non-serializable fields: ${problems.join(", ")}`)
+    }
+    console.debug(`Adding document to ${collectionName}`)
+    console.debug(safeStringify(payload))
+    const docRef = await addDoc(collection(db, collectionName), {
+      ...payload,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    })
+    return docRef.id
+  } catch (error) {
+    console.error(`Error adding document to ${collectionName}:`, error)
+    throw error
+  }
+}
+
+// Update a document
+export async function updateDocument<T>(collectionName: string, id: string, data: Partial<T>): Promise<void> {
+  try {
+    const payload = sanitizeForFirestore(data)
+    const problems = findNonSerializableFields(payload)
+    if (problems.length > 0) {
+      console.error(`Payload contains non-serializable fields: ${problems.join(", ")}`)
+      console.error("Payload preview:", safeStringify(payload))
+      throw new Error(`Payload contains non-serializable fields: ${problems.join(", ")}`)
+    }
+    console.debug(`Updating document ${id} in ${collectionName}`)
+    console.debug(safeStringify(payload))
+    const docRef = doc(db, collectionName, id)
+    await updateDoc(docRef, {
+      ...payload,
+      updatedAt: Timestamp.now(),
+    })
+  } catch (error) {
+    console.error(`Error updating document ${id} in ${collectionName}:`, error)
+    throw error
+  }
+}
+
+// Delete a document
+export async function deleteDocument(collectionName: string, id: string): Promise<void> {
+  try {
+    const docRef = doc(db, collectionName, id)
+    await deleteDoc(docRef)
+  } catch (error) {
+    console.error(`Error deleting document ${id} from ${collectionName}:`, error)
+    throw error
+  }
+}
+
+// Upload an image to Firebase Storage
+export async function uploadImage(file: File, path: string): Promise<string> {
+  try {
+    const storageRef = ref(storage, path)
+    await uploadBytes(storageRef, file)
+    const downloadURL = await getDownloadURL(storageRef)
+    return downloadURL
+  } catch (error) {
+    console.error("Error uploading image:", error)
+    throw error
+  }
+}
+
+// Delete an image from Firebase Storage
+export async function deleteImage(path: string): Promise<void> {
+  try {
+    const storageRef = ref(storage, path)
+    await deleteObject(storageRef)
+  } catch (error) {
+    console.error("Error deleting image:", error)
+    throw error
+  }
+}
