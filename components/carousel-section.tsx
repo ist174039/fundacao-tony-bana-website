@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowUpRight, Images } from "lucide-react";
+import { ArrowUpRight, ChevronLeft, ChevronRight, Images } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -61,9 +61,29 @@ export default function CarouselSection() {
     [category, items],
   );
 
-  if (items.length === 0) return null;
-
   const visibleItems = showAll ? filteredItems : filteredItems.slice(0, 6);
+  const selectedIndex = selected
+    ? filteredItems.findIndex((item) => item.id === selected.id)
+    : -1;
+
+  const movePhoto = (direction: -1 | 1) => {
+    if (selectedIndex < 0 || filteredItems.length < 2) return;
+    const nextIndex =
+      (selectedIndex + direction + filteredItems.length) % filteredItems.length;
+    setSelected(filteredItems[nextIndex]);
+  };
+
+  useEffect(() => {
+    if (!selected || filteredItems.length < 2) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "ArrowLeft") movePhoto(-1);
+      if (event.key === "ArrowRight") movePhoto(1);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [selected, selectedIndex, filteredItems]);
+
+  if (items.length === 0) return null;
 
   return (
     <section
@@ -190,27 +210,91 @@ export default function CarouselSection() {
         open={!!selected}
         onOpenChange={(open) => !open && setSelected(null)}
       >
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>
-              {selected?.titulo || "Momento da Fundação"}
-            </DialogTitle>
+        <DialogContent className="max-h-[94vh] max-w-6xl gap-0 overflow-hidden rounded-3xl border-0 bg-[#171614] p-0 text-white shadow-2xl sm:w-[calc(100%-3rem)]">
+          <DialogHeader className="flex-row items-center justify-between gap-4 px-5 pb-4 pt-5 pr-14 text-left sm:px-7 sm:pt-6">
+            <div className="min-w-0">
+              <p className="mb-1 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-white/55">
+                {galleries.find(
+                  (gallery) =>
+                    gallery.id === (selected?.categoria || "comunidade"),
+                )?.title || "Fundação Tony Bana"}
+              </p>
+              <DialogTitle className="truncate text-lg font-semibold text-white sm:text-xl">
+                {selected?.titulo || "Momento da Fundação"}
+              </DialogTitle>
+            </div>
+            {selectedIndex >= 0 && (
+              <span className="shrink-0 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 font-mono text-xs text-white/65">
+                {String(selectedIndex + 1).padStart(2, "0")} /{" "}
+                {String(filteredItems.length).padStart(2, "0")}
+              </span>
+            )}
           </DialogHeader>
-          {selected?.imagem && (
-            <div className="relative aspect-[4/3] max-h-[70vh] w-full overflow-hidden rounded-xl bg-muted">
-              <Image
-                src={selected.imagem}
-                alt={selected.titulo || "Fotografia da Fundação"}
-                fill
-                className="object-contain"
+
+          <div className="relative mx-3 overflow-hidden rounded-2xl bg-black sm:mx-5">
+            <div className="relative aspect-[4/3] max-h-[68vh] min-h-56 w-full sm:aspect-[16/10]">
+              {selected?.imagem && (
+                <Image
+                  key={selected.id}
+                  src={selected.imagem}
+                  alt={selected.titulo || "Fotografia da Fundação"}
+                  fill
+                  priority
+                  className="object-contain"
+                  sizes="(max-width: 768px) 100vw, 90vw"
+                />
+              )}
+            </div>
+            {filteredItems.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => movePhoto(-1)}
+                  aria-label="Fotografia anterior"
+                  className="absolute left-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/20 bg-black/45 text-white shadow-lg backdrop-blur-md transition hover:scale-105 hover:bg-black/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:left-5 sm:h-12 sm:w-12"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => movePhoto(1)}
+                  aria-label="Fotografia seguinte"
+                  className="absolute right-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/20 bg-black/45 text-white shadow-lg backdrop-blur-md transition hover:scale-105 hover:bg-black/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:right-5 sm:h-12 sm:w-12"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+              </>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-3 px-5 pb-5 pt-4 sm:flex-row sm:items-end sm:justify-between sm:px-7 sm:pb-6">
+            <div className="min-w-0">
+              {selected?.descricao && (
+                <p className="max-w-3xl text-sm leading-6 text-white/70">
+                  {selected.descricao}
+                </p>
+              )}
+              {selected?.data && (
+                <p className="mt-2 text-xs font-medium uppercase tracking-wider text-white/45">
+                  {selected.data}
+                </p>
+              )}
+            </div>
+            {filteredItems.length > 1 && (
+              <p className="shrink-0 text-xs text-white/45">
+                Usa as setas do teclado para navegar
+              </p>
+            )}
+          </div>
+          {filteredItems.length > 1 && selectedIndex >= 0 && (
+            <div className="h-1 w-full bg-white/10">
+              <div
+                className="h-full bg-primary transition-all duration-300"
+                style={{
+                  width: `${((selectedIndex + 1) / filteredItems.length) * 100}%`,
+                }}
               />
             </div>
-          )}
-          {selected?.data && (
-            <p className="text-sm text-muted-foreground">{selected.data}</p>
-          )}
-          {selected?.descricao && (
-            <p className="leading-7 text-foreground/85">{selected.descricao}</p>
           )}
         </DialogContent>
       </Dialog>
