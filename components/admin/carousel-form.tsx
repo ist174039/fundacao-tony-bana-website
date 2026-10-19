@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Image from "next/image"
 import { Upload, X } from "lucide-react"
 import type { CarrosselItem } from "@/lib/firebase-firestore"
@@ -21,6 +22,7 @@ export function CarouselForm({ item, onSubmit, onCancel }: Props) {
     descricao: item?.descricao || "",
     data: item?.data || new Date().toISOString().split("T")[0],
     imagem: item?.imagem || "",
+    categoria: item?.categoria || "comunidade",
   })
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string>(item?.imagem || "")
@@ -51,6 +53,18 @@ export function CarouselForm({ item, onSubmit, onCancel }: Props) {
       <div>
         <Label htmlFor="titulo">Título (opcional)</Label>
         <Input id="titulo" value={formData.titulo} onChange={(e) => setFormData({ ...formData, titulo: e.target.value })} />
+      </div>
+      <div>
+        <Label htmlFor="categoria">Galeria</Label>
+        <Select value={formData.categoria || "comunidade"} onValueChange={(value: "desporto" | "educacao" | "saude" | "comunidade") => setFormData({ ...formData, categoria: value })}>
+          <SelectTrigger id="categoria"><SelectValue placeholder="Escolher galeria" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="desporto">Desporto</SelectItem>
+            <SelectItem value="educacao">Educação</SelectItem>
+            <SelectItem value="saude">Saúde</SelectItem>
+            <SelectItem value="comunidade">Comunidade / geral</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <div>
         <Label htmlFor="data">Data</Label>

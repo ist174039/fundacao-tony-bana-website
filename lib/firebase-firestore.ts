@@ -78,6 +78,7 @@ export interface CarrosselItem {
   descricao?: string
   data?: string
   imagem?: string
+  categoria?: "desporto" | "educacao" | "saude" | "comunidade"
 }
 
 export const COLLECTIONS = {
