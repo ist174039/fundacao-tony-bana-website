@@ -19,9 +19,9 @@ export default function HeroSection() {
         className="pointer-events-none absolute -right-24 top-16 -z-10 h-96 w-96 rounded-full bg-primary/20 blur-[120px]"
       />
 
-      <div className="container grid min-h-[680px] items-center gap-12 py-16 md:py-24 lg:grid-cols-[1.02fr_0.98fr] lg:gap-16 lg:py-28">
+      <div className="container grid min-h-[640px] items-center gap-12 py-14 md:py-20 lg:grid-cols-[1.02fr_0.98fr] lg:gap-16 lg:py-24">
         <motion.div
-          initial={{ opacity: 0, y: 22 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, ease: "easeOut" }}
           className="relative z-10"
@@ -83,16 +83,16 @@ export default function HeroSection() {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.97 }}
+          initial={false}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, delay: 0.15 }}
-          className="relative mx-auto w-full max-w-[620px] lg:ml-auto"
+          className="group relative mx-auto w-full max-w-[620px] lg:ml-auto"
         >
           <div
             aria-hidden="true"
-            className="absolute -inset-3 rounded-[2rem] border border-border"
+            className="absolute -inset-3 -rotate-2 rounded-[2.6rem] border border-primary/15 transition-transform duration-500 group-hover:rotate-0"
           />
-          <div className="group relative aspect-[4/4.6] overflow-hidden rounded-[1.65rem] border border-border bg-secondary shadow-2xl shadow-foreground/15 sm:aspect-[5/4.6]">
+          <div className="group relative aspect-[4/4.4] overflow-hidden rounded-[2rem_2rem_2rem_5rem] border border-border bg-secondary shadow-2xl shadow-foreground/15 sm:aspect-[5/4.5]">
             <Image
               src="https://firebasestorage.googleapis.com/v0/b/fundacao-tony-bana.firebasestorage.app/o/Imagem%20WhatsApp%202025-04-05%20%C3%A0s%2021.11.19_11243c0b.jpg?alt=media"
               alt="Actividade da Fundação Tony Bana com a comunidade"
@@ -108,20 +108,20 @@ export default function HeroSection() {
                   <p className="mono-label mb-2 text-accent">
                     Missão em movimento
                   </p>
-                  <p className="max-w-xs font-montserrat text-lg font-semibold leading-snug text-white sm:text-xl">
+                  <p className="max-w-xs font-montserrat text-lg font-semibold leading-snug text-foreground sm:text-xl">
                     Criar oportunidades sustentáveis e inclusivas.
                   </p>
                 </div>
                 <a
                   href="#missao"
                   aria-label="Saiba mais sobre a missão"
-                  className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-primary"
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition duration-300 hover:scale-105 hover:bg-primary/90"
                 >
                   <ArrowDown className="h-5 w-5" />
                 </a>
               </div>
             </div>
-            <div className="absolute right-5 top-5 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/90 px-3 py-2 text-xs text-foreground shadow-sm backdrop-blur-md">
+            <div className="absolute right-5 top-5 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/95 px-3 py-2 text-xs font-medium text-foreground shadow-lg shadow-black/10 backdrop-blur-md">
               <Sparkles className="h-3.5 w-3.5 text-accent" /> Inclusão e
               desenvolvimento
             </div>

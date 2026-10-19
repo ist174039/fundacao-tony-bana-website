@@ -16,6 +16,7 @@ const fixedNavigation = [
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
   const [availableSections, setAvailableSections] = useState<string[]>([]);
 
   const navigationItems = [
@@ -35,7 +36,14 @@ export default function Header() {
   ];
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 12);
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 12);
+      const scrollableHeight =
+        document.documentElement.scrollHeight - window.innerHeight;
+      setScrollProgress(
+        scrollableHeight > 0 ? (window.scrollY / scrollableHeight) * 100 : 0,
+      );
+    };
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
@@ -78,6 +86,11 @@ export default function Header() {
           : "border-transparent bg-background/85 backdrop-blur-md"
       }`}
     >
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-primary via-accent to-primary transition-[width] duration-150"
+        style={{ width: `${scrollProgress}%` }}
+      />
       <div className="container flex h-[4.5rem] items-center justify-between gap-4 md:h-20">
         <Link
           href="/"
@@ -146,7 +159,7 @@ export default function Header() {
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -8 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.18 }}

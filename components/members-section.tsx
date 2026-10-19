@@ -39,7 +39,7 @@ export default function MembersSection() {
     <section id="membros" className="py-20 md:py-28">
       <div className="container">
         <motion.div
-          initial={{ opacity: 0, y: 18 }}
+          initial={false}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
@@ -77,7 +77,7 @@ export default function MembersSection() {
           {(showAll ? members : members.slice(0, 3)).map((member, index) => (
             <motion.div
               key={member.id}
-              initial={{ opacity: 0, y: 18 }}
+              initial={false}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: (index % 3) * 0.08 }}

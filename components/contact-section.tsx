@@ -27,7 +27,7 @@ export default function ContactSection() {
     <section id="contato" className="py-20 md:py-28">
       <div className="container">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={false}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
@@ -45,7 +45,7 @@ export default function ContactSection() {
 
         <div className="grid lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
           <motion.div
-            initial={{ opacity: 0, x: -50 }}
+            initial={false}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
@@ -121,7 +121,7 @@ export default function ContactSection() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, x: 50 }}
+            initial={false}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}

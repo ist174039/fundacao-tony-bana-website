@@ -92,7 +92,7 @@ export default function CarouselSection() {
     >
       <div className="container">
         <motion.div
-          initial={{ opacity: 0, y: 18 }}
+          initial={false}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.45 }}
@@ -162,7 +162,7 @@ export default function CarouselSection() {
                 key={item.id}
                 type="button"
                 onClick={() => setSelected(item)}
-                initial={{ opacity: 0, y: 16 }}
+                initial={false}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: (index % 3) * 0.06 }}

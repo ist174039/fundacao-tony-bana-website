@@ -16,7 +16,7 @@ export default function MissionSection() {
       />
       <div className="container relative">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={false}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
@@ -34,7 +34,7 @@ export default function MissionSection() {
         </motion.div>
         <div className="grid gap-12 lg:grid-cols-2 items-center">
           <motion.div
-            initial={{ opacity: 0, x: -50 }}
+            initial={false}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
@@ -56,7 +56,7 @@ export default function MissionSection() {
             </a>
           </motion.div>
           <motion.div
-            initial={{ opacity: 0, x: 50 }}
+            initial={false}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}

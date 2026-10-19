@@ -1,8 +1,7 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
-import { BookOpen, Heart, Users, Trophy, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
+import { BookOpen, Heart, Sparkles, Trophy, Users } from "lucide-react";
 
 const pillars = [
   {
@@ -39,55 +38,87 @@ const pillars = [
 
 export default function PillarsSection() {
   return (
-    <section id="pilares" className="py-20 md:py-28">
-      <div className="container">
+    <section id="pilares" className="relative overflow-hidden py-20 md:py-28">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-28 top-12 h-80 w-80 rounded-full bg-accent/10 blur-3xl"
+      />
+      <div className="container relative">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={false}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mb-12 max-w-3xl"
+          transition={{ duration: 0.5 }}
+          className="mb-10 flex flex-col gap-5 md:mb-12 md:flex-row md:items-end md:justify-between"
         >
-          <p className="mono-label mb-4 text-accent">02 / Como trabalhamos</p>
-          <h2 className="mb-4 font-montserrat text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
-            Um trabalho com{" "}
-            <span className="text-primary">várias frentes.</span>
-          </h2>
-          <p className="max-w-2xl text-lg text-muted-foreground">
-            Apoiamos através de programas focados e inclusivos.
+          <div className="max-w-3xl">
+            <p className="mono-label mb-4 text-accent">02 / Como trabalhamos</p>
+            <h2 className="font-montserrat text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
+              Um trabalho com{" "}
+              <span className="text-primary">várias frentes.</span>
+            </h2>
+          </div>
+          <p className="max-w-sm text-base leading-7 text-muted-foreground md:text-right">
+            Cada área abre um caminho. Juntas, criam mais oportunidades para
+            todos.
           </p>
         </motion.div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {pillars.map((pillar, index) => (
-            <motion.div
-              key={pillar.title}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-            >
-              <Card className="group h-full rounded-2xl border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-foreground/10">
-                <CardContent className="p-6 md:p-7">
-                  <p className="mono-label mb-5 text-muted-foreground">
-                    Área 0{index + 1}
-                  </p>
-                  <motion.div
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    transition={{ type: "spring", stiffness: 300 }}
-                    className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground"
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6 lg:auto-rows-[minmax(220px,auto)]">
+          {pillars.map((pillar, index) => {
+            const featured = index === 0;
+            const Icon = pillar.icon;
+            return (
+              <motion.article
+                key={pillar.title}
+                initial={false}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.45, delay: (index % 3) * 0.06 }}
+                whileHover={{ y: -5 }}
+                className={`group relative isolate flex min-h-[260px] flex-col overflow-hidden rounded-[1.75rem] border p-6 shadow-sm transition-[border-color,box-shadow] duration-300 md:p-8 ${featured ? "border-primary bg-primary text-primary-foreground shadow-primary/15 lg:col-span-3 lg:row-span-2" : "border-border/80 bg-card hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 lg:col-span-3"}`}
+              >
+                {featured && (
+                  <div
+                    aria-hidden="true"
+                    className="absolute -right-10 -top-12 -z-10 h-56 w-56 rounded-full border-[28px] border-white/10 transition-transform duration-700 group-hover:scale-110"
+                  />
+                )}
+                <div className="flex items-start justify-between">
+                  <div
+                    className={`grid h-12 w-12 place-items-center rounded-2xl transition duration-300 group-hover:rotate-[-8deg] group-hover:scale-110 ${featured ? "bg-white/15 text-white" : "bg-primary/10 text-primary"}`}
                   >
-                    <pillar.icon className="h-6 w-6" />
-                  </motion.div>
-                  <h3 className="text-xl font-semibold mb-3 font-montserrat group-hover:text-primary transition-colors">
+                    <Icon
+                      className="h-6 w-6"
+                      strokeWidth={1.8}
+                      aria-hidden="true"
+                    />
+                  </div>
+                  <span
+                    className={`font-mono text-sm tracking-widest ${featured ? "text-white/45" : "text-muted-foreground/60"}`}
+                  >
+                    0{index + 1}
+                  </span>
+                </div>
+                <div className="mt-auto pt-10">
+                  <h3
+                    className={`font-montserrat text-2xl font-bold tracking-tight ${featured ? "text-white md:text-3xl" : "text-foreground group-hover:text-primary"}`}
+                  >
                     {pillar.title}
                   </h3>
-                  <p className="text-muted-foreground leading-relaxed">
+                  <p
+                    className={`mt-3 max-w-xl text-sm leading-6 ${featured ? "text-white/80 md:text-base md:leading-7" : "text-muted-foreground"}`}
+                  >
                     {pillar.description}
                   </p>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                </div>
+                <span
+                  aria-hidden="true"
+                  className={`absolute bottom-8 right-8 h-[2px] w-9 rounded-full transition-[width] duration-300 group-hover:w-16 ${featured ? "bg-white/45" : "bg-primary/35"}`}
+                />
+              </motion.article>
+            );
+          })}
         </div>
       </div>
     </section>
