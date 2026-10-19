@@ -24,9 +24,9 @@ export default function Footer() {
               <Image
                 src="/logo.jpg"
                 alt="Fundação Tony Bana"
-                width={100}
-                height={100}
-                className="rounded-full ring-2 ring-primary/20"
+                width={280}
+                height={184}
+                className="h-auto w-36 object-contain"
               />
             </motion.div>
             <p className="text-sm text-muted-foreground text-center md:text-left">

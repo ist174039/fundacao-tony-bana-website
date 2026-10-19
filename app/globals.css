@@ -33,10 +33,13 @@
 
   html {
     scroll-behavior: smooth;
+    scroll-padding-top: 6rem;
+    overflow-x: clip;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
+    overflow-x: clip;
     background-image:
       radial-gradient(
         ellipse at 78% 0%,

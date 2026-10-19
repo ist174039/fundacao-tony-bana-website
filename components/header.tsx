@@ -1,12 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
+import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight, Menu, X } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
 import { COLLECTIONS, getCollection } from "@/lib/firebase-firestore";
+
+const fixedNavigation = [
+  { href: "#missao", label: "A Fundação" },
+  { href: "#pilares", label: "O nosso trabalho" },
+];
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -14,10 +19,9 @@ export default function Header() {
   const [availableSections, setAvailableSections] = useState<string[]>([]);
 
   const navigationItems = [
-    { href: "#missao", label: "Sobre" },
-    { href: "#pilares", label: "Pilares" },
+    ...fixedNavigation,
     ...(availableSections.includes("membros")
-      ? [{ href: "#membros", label: "Membros" }]
+      ? [{ href: "#membros", label: "Equipa" }]
       : []),
     ...(availableSections.includes("carrossel")
       ? [{ href: "#carrossel", label: "Galeria" }]
@@ -28,14 +32,12 @@ export default function Header() {
     ...(availableSections.includes("parceiros")
       ? [{ href: "#parceiros", label: "Parceiros" }]
       : []),
-    { href: "#contato", label: "Contato" },
   ];
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
-    window.addEventListener("scroll", handleScroll);
+    const handleScroll = () => setScrolled(window.scrollY > 12);
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -43,77 +45,82 @@ export default function Header() {
     let mounted = true;
     Promise.all([
       getCollection(COLLECTIONS.MEMBROS)
-        .then((items) => (items.length > 0 ? "membros" : null))
+        .then((items) => (items.length ? "membros" : null))
         .catch(() => null),
       getCollection(COLLECTIONS.CARROSSEL)
-        .then((items) => (items.length > 0 ? "carrossel" : null))
+        .then((items) => (items.length ? "carrossel" : null))
         .catch(() => null),
       getCollection(COLLECTIONS.NOTICIAS)
-        .then((items) => (items.length > 0 ? "noticias" : null))
+        .then((items) => (items.length ? "noticias" : null))
         .catch(() => null),
       getCollection(COLLECTIONS.PARCEIROS)
-        .then((items) => (items.length > 0 ? "parceiros" : null))
+        .then((items) => (items.length ? "parceiros" : null))
         .catch(() => null),
     ]).then((sections) => {
-      if (mounted)
+      if (mounted) {
         setAvailableSections(
           sections.filter((section): section is string => Boolean(section)),
         );
+      }
     });
     return () => {
       mounted = false;
     };
   }, []);
 
+  const closeMenu = () => setIsMenuOpen(false);
+
   return (
-    <motion.header
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.6 }}
-      className={`sticky top-0 z-50 w-full border-b border-border transition-all duration-300 ${
+    <header
+      className={`sticky top-0 z-50 border-b transition-all duration-300 ${
         scrolled
-          ? "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-md"
-          : "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+          ? "border-border/80 bg-background/95 shadow-sm backdrop-blur-xl"
+          : "border-transparent bg-background/85 backdrop-blur-md"
       }`}
     >
-      <div className="container flex h-20 items-center justify-between">
-        <Link href="/" className="group flex items-center gap-3">
-          <motion.div
-            whileHover={{ scale: 1.05, rotate: 5 }}
-            transition={{ type: "spring", stiffness: 300 }}
-          >
-            <Image
-              src="/logo.jpg"
-              alt="Fundação Tony Bana"
-              width={280}
-              height={184}
-              priority
-              className="h-14 w-[5.25rem] object-contain transition-transform group-hover:scale-[1.03] sm:h-16 sm:w-24"
-            />
-          </motion.div>
-          <span className="flex flex-col font-montserrat font-semibold leading-tight transition-colors group-hover:text-primary">
-            <span className="text-base sm:text-lg">Fundação Tony Bana</span>
-            <span className="mono-label mt-1 !text-[0.55rem] !tracking-[0.15em] text-muted-foreground">
+      <div className="container flex h-[4.5rem] items-center justify-between gap-4 md:h-20">
+        <Link
+          href="/"
+          onClick={closeMenu}
+          aria-label="Fundação Tony Bana — início"
+          className="group flex min-w-0 items-center"
+        >
+          <Image
+            src="/logo.jpg"
+            alt="Fundação Tony Bana"
+            width={280}
+            height={184}
+            priority
+            className="h-12 w-[4.6rem] shrink-0 object-contain transition-transform group-hover:scale-[1.03] sm:h-14 sm:w-[5.25rem]"
+          />
+          <span className="ml-2 flex min-w-0 flex-col font-montserrat font-semibold leading-tight text-foreground">
+            <span className="truncate text-sm sm:text-base">
+              Fundação Tony Bana
+            </span>
+            <span className="mt-1 text-[0.58rem] font-medium uppercase tracking-[0.13em] text-muted-foreground">
               Comunidade · inclusão
             </span>
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-6 md:flex">
+        <nav
+          aria-label="Navegação principal"
+          className="hidden items-center gap-1 xl:flex"
+        >
           {navigationItems.map((item) => (
-            <Link
+            <a
               key={item.href}
               href={item.href}
-              className="relative text-sm font-medium transition-colors after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-primary after:transition-all hover:text-primary hover:after:w-full"
+              className="rounded-full px-3 py-2 text-[0.82rem] font-medium text-muted-foreground transition-colors hover:bg-primary/5 hover:text-primary"
             >
               {item.label}
-            </Link>
+            </a>
           ))}
         </nav>
 
         <Button
           asChild
-          className="hidden h-10 rounded-full px-5 md:inline-flex"
+          className="hidden h-10 shrink-0 rounded-full px-5 xl:inline-flex"
         >
           <a href="#contato">
             Contactar <ArrowUpRight className="ml-1.5 h-4 w-4" />
@@ -124,37 +131,53 @@ export default function Header() {
           variant="outline"
           size="icon"
           aria-label={isMenuOpen ? "Fechar menu" : "Abrir menu"}
-          className="border-border bg-card md:hidden"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          aria-expanded={isMenuOpen}
+          className="h-10 w-10 shrink-0 rounded-full border-border bg-card xl:hidden"
+          onClick={() => setIsMenuOpen((value) => !value)}
         >
-          {isMenuOpen ? <X /> : <Menu />}
+          {isMenuOpen ? (
+            <X className="h-4 w-4" />
+          ) : (
+            <Menu className="h-4 w-4" />
+          )}
         </Button>
       </div>
 
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-            className="md:hidden border-t overflow-hidden"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18 }}
+            className="absolute inset-x-0 top-full border-b border-border bg-background/98 px-4 pb-5 pt-2 shadow-lg backdrop-blur-xl xl:hidden"
           >
-            <nav className="container flex flex-col gap-4 py-4">
-              {navigationItems.map((item) => (
-                <Link
+            <nav
+              aria-label="Navegação móvel"
+              className="mx-auto flex max-w-6xl flex-col gap-1"
+            >
+              {navigationItems.map((item, index) => (
+                <a
                   key={item.href}
                   href={item.href}
-                  className="text-sm font-medium transition-colors hover:text-primary"
-                  onClick={() => setIsMenuOpen(false)}
+                  onClick={closeMenu}
+                  className="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
                 >
                   {item.label}
-                </Link>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    0{index + 1}
+                  </span>
+                </a>
               ))}
+              <Button asChild className="mt-2 w-full rounded-full">
+                <a href="#contato" onClick={closeMenu}>
+                  Contactar a Fundação <ArrowUpRight className="ml-2 h-4 w-4" />
+                </a>
+              </Button>
             </nav>
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.header>
+    </header>
   );
 }

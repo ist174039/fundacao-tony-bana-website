@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowUpRight, Handshake } from "lucide-react";
+import { ArrowUpRight, ChevronDown, Handshake } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { getCollection, COLLECTIONS, Parceiro } from "@/lib/firebase-firestore";
@@ -20,6 +20,9 @@ const initials = (name: string) =>
 export default function PartnersSection() {
   const [partners, setPartners] = useState<Parceiro[]>([]);
   const [showAll, setShowAll] = useState(false);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<string[]>(
+    [],
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -67,7 +70,9 @@ export default function PartnersSection() {
               className="w-fit shrink-0 rounded-full px-5"
               onClick={() => setShowAll((value) => !value)}
             >
-              {showAll ? "Mostrar menos" : "Ver mais parceiros"}
+              {showAll
+                ? "Mostrar menos"
+                : `Ver todos os parceiros (${partners.length})`}
             </Button>
           )}
         </motion.div>
@@ -106,9 +111,36 @@ export default function PartnersSection() {
                       {partner.nome}
                     </h3>
                     {partner.descricao && (
-                      <p className="mt-3 line-clamp-2 flex-1 text-sm leading-6 text-muted-foreground">
-                        {partner.descricao}
-                      </p>
+                      <>
+                        <p
+                          className={`mt-3 flex-1 text-sm leading-6 text-muted-foreground ${expandedDescriptions.includes(partner.id) ? "" : "line-clamp-2"}`}
+                        >
+                          {partner.descricao}
+                        </p>
+                        {partner.descricao.length > 110 && (
+                          <button
+                            type="button"
+                            className="mt-3 inline-flex w-fit items-center gap-1 text-sm font-semibold text-primary transition-colors hover:text-primary/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                            aria-expanded={expandedDescriptions.includes(
+                              partner.id,
+                            )}
+                            onClick={() =>
+                              setExpandedDescriptions((current) =>
+                                current.includes(partner.id)
+                                  ? current.filter((id) => id !== partner.id)
+                                  : [...current, partner.id],
+                              )
+                            }
+                          >
+                            {expandedDescriptions.includes(partner.id)
+                              ? "Ver menos"
+                              : "Ver mais"}
+                            <ChevronDown
+                              className={`h-4 w-4 transition-transform ${expandedDescriptions.includes(partner.id) ? "rotate-180" : ""}`}
+                            />
+                          </button>
+                        )}
+                      </>
                     )}
                     {partner.website && (
                       <Button
