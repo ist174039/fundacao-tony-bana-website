@@ -79,7 +79,7 @@ export async function requireAreaAdmin(request: Request) {
   if (!token) return null
 
   try {
-    const decoded = await getFirebaseAdminAuth().verifyIdToken(token, true)
+    const decoded = await getFirebaseAdminAuth().verifyIdToken(token)
     return isConfiguredAreaAdmin(decoded) ? decoded : null
   } catch {
     return null
@@ -119,7 +119,7 @@ export async function resolveAreaAccess(request: Request) {
 
   let decoded
   try {
-    decoded = await getFirebaseAdminAuth().verifyIdToken(token, true)
+    decoded = await getFirebaseAdminAuth().verifyIdToken(token)
   } catch (error) {
     const code = typeof error === "object" && error && "code" in error ? String(error.code) : "unknown"
     console.error("[area-access] Firebase token verification failed", { code })
