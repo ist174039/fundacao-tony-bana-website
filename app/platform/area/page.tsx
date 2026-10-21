@@ -45,7 +45,7 @@ export default function AreaPage() {
     <header className="sticky top-0 z-20 border-b border-border/70 bg-background/90 backdrop-blur">
       <div className="container flex h-16 items-center justify-between gap-4">
         <div className="flex items-center gap-3"><Image src="/logo.jpg" alt="Fundação Tony Bana" width={40} height={40} className="rounded-full"/><div><h1 className="font-semibold">Área de trabalho</h1><p className="hidden text-xs text-muted-foreground sm:block">Fundação Tony Bana</p></div></div>
-        <div className="flex items-center gap-3"><span className="hidden text-sm text-muted-foreground md:inline">{email}</span>{role === "admin" && <Button asChild variant="outline" size="sm"><Link href="/admin"><LayoutDashboard className="mr-2 h-4 w-4"/>Conteúdos do site</Link></Button>}<Button variant="ghost" size="sm" onClick={() => void logout()} aria-label="Terminar sessão"><LogOut className="h-4 w-4"/><span className="ml-2 hidden sm:inline">Sair</span></Button></div>
+        <div className="flex items-center gap-3"><span className="hidden text-sm text-muted-foreground md:inline">{email}</span>{role === "admin" && <Button asChild variant="outline" size="sm"><Link href="/platform/admin"><LayoutDashboard className="mr-2 h-4 w-4"/>Conteúdos do site</Link></Button>}<Button variant="ghost" size="sm" onClick={() => void logout()} aria-label="Terminar sessão"><LogOut className="h-4 w-4"/><span className="ml-2 hidden sm:inline">Sair</span></Button></div>
       </div>
     </header>
     <main className="container max-w-7xl py-8 md:py-10">

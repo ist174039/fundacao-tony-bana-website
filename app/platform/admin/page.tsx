@@ -113,7 +113,7 @@ export default function AdminDashboard() {
         .then(({ role }) => {
           if (role !== "admin") {
             setIsAuthenticated(false)
-            router.replace("/area")
+            router.replace("/platform/area")
             return
           }
           setIsAuthenticated(true)

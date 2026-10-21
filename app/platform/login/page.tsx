@@ -27,7 +27,7 @@ export default function PlatformLoginPage() {
     try {
       await signInWithEmail(email, password)
       const { role } = await areaFetch<{ role: "admin" | "socio" }>("/api/area/session")
-      router.replace(role === "admin" ? "/admin" : "/area")
+      router.replace(role === "admin" ? "/platform/admin" : "/platform/area")
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Não foi possível validar o acesso à plataforma.")
     } finally {
