@@ -91,7 +91,7 @@ export async function requireAreaAccess(request: Request) {
   if (!token) return null
 
   try {
-    const decoded = await getFirebaseAdminAuth().verifyIdToken(token, true)
+    const decoded = await getFirebaseAdminAuth().verifyIdToken(token)
     if (isConfiguredAreaAdmin(decoded)) return { role: "admin" as const, uid: decoded.uid }
 
     const socios = await getFirebaseAdminFirestore()
