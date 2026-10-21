@@ -7,6 +7,7 @@
 As rotas `/api/area/*` exigem um Firebase ID token válido e revogação verificada. Operações administrativas exigem um dos seguintes controlos no servidor:
 
 - UID presente em `FIREBASE_AREA_ADMIN_UIDS` (lista de UIDs separada por vírgulas); ou
+- email Firebase verificado presente em `FIREBASE_AREA_ADMIN_EMAILS`; ou
 - custom claim Firebase `admin: true`.
 
 Os pedidos enviados no formulário público da homepage ficam em `area_membership_intentions` e não criam sócios. Só um administrador pode revê-los. Ao aceitar um pedido, o servidor cria o registo oficial em `area_socios` e marca o pedido como aceite na mesma transação; a rejeição apenas atualiza o pedido. Os pedidos são privados e não têm rota pública de leitura.

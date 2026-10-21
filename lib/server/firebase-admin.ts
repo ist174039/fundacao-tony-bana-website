@@ -38,19 +38,32 @@ export function getFirebaseAdminFirestore() {
   return getFirestore(getAdminApp())
 }
 
+function isAreaAdmin(decoded: { uid: string; admin?: boolean; email?: string; email_verified?: boolean }) {
+  const allowlistedUids = (process.env.FIREBASE_AREA_ADMIN_UIDS || "")
+    .split(",")
+    .map((uid) => uid.trim())
+    .filter(Boolean)
+  const allowlistedEmails = (process.env.FIREBASE_AREA_ADMIN_EMAILS || "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean)
+
+  const emailIsAllowlisted = Boolean(
+    decoded.email_verified &&
+    decoded.email &&
+    allowlistedEmails.includes(decoded.email.toLowerCase()),
+  )
+
+  return decoded.admin === true || allowlistedUids.includes(decoded.uid) || emailIsAllowlisted
+}
+
 export async function requireAreaAdmin(request: Request) {
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "")
   if (!token) return null
 
   try {
     const decoded = await getFirebaseAdminAuth().verifyIdToken(token, true)
-    const allowlisted = (process.env.FIREBASE_AREA_ADMIN_UIDS || "")
-      .split(",")
-      .map((uid) => uid.trim())
-      .filter(Boolean)
-      .includes(decoded.uid)
-
-    return decoded.admin === true || allowlisted ? decoded : null
+    return isAreaAdmin(decoded) ? decoded : null
   } catch {
     return null
   }
@@ -62,13 +75,7 @@ export async function requireAreaAccess(request: Request) {
 
   try {
     const decoded = await getFirebaseAdminAuth().verifyIdToken(token, true)
-    const allowlisted = (process.env.FIREBASE_AREA_ADMIN_UIDS || "")
-      .split(",")
-      .map((uid) => uid.trim())
-      .filter(Boolean)
-      .includes(decoded.uid)
-
-    if (decoded.admin === true || allowlisted) return { role: "admin" as const, uid: decoded.uid }
+    if (isAreaAdmin(decoded)) return { role: "admin" as const, uid: decoded.uid }
 
     const socios = await getFirebaseAdminFirestore()
       .collection("area_socios")
