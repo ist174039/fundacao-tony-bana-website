@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-export default function AreaLoginPage() {
+export default function PlatformLoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -26,10 +26,10 @@ export default function AreaLoginPage() {
     setLoading(true)
     try {
       await signInWithEmail(email, password)
-      await areaFetch<{ role: "admin" | "socio" }>("/api/area/session")
-      router.replace("/area")
+      const { role } = await areaFetch<{ role: "admin" | "socio" }>("/api/area/session")
+      router.replace(role === "admin" ? "/admin" : "/area")
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Não foi possível validar o acesso à área.")
+      setError(cause instanceof Error ? cause.message : "Não foi possível validar o acesso à plataforma.")
     } finally {
       setLoading(false)
     }
@@ -41,16 +41,16 @@ export default function AreaLoginPage() {
       <Card className="site-card relative w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <div className="mb-4 flex justify-center"><Image src="/logo.jpg" alt="Fundação Tony Bana" width={84} height={84} className="rounded-full" /></div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">Gestão da Fundação</p>
-          <CardTitle className="text-2xl">Entrar na área de trabalho</CardTitle>
-          <p className="mt-2 text-sm text-muted-foreground">Use a conta autorizada pela Fundação para consultar sócios, quotas e doações.</p>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">Plataforma da Fundação</p>
+          <CardTitle className="text-2xl">Entrar</CardTitle>
+          <p className="mt-2 text-sm text-muted-foreground">Usa a tua conta da Fundação. O acesso disponível é determinado pelo teu perfil.</p>
         </CardHeader>
         <CardContent>
           {error && <Alert variant="destructive" className="mb-4"><AlertDescription>{error}</AlertDescription></Alert>}
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2"><Label htmlFor="area-email">Email</Label><Input id="area-email" type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} required disabled={loading} /></div>
-            <div className="space-y-2"><Label htmlFor="area-password">Senha</Label><Input id="area-password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required disabled={loading} /></div>
-            <Button type="submit" className="w-full" disabled={loading}>{loading ? "A validar acesso…" : "Entrar na área"}</Button>
+            <div className="space-y-2"><Label htmlFor="platform-email">Email</Label><Input id="platform-email" type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} required disabled={loading} /></div>
+            <div className="space-y-2"><Label htmlFor="platform-password">Senha</Label><Input id="platform-password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required disabled={loading} /></div>
+            <Button type="submit" className="w-full" disabled={loading}>{loading ? "A validar acesso…" : "Entrar na plataforma"}</Button>
           </form>
           <p className="mt-5 text-center text-sm text-muted-foreground"><Link href="/" className="underline underline-offset-4 hover:text-foreground">Voltar ao site</Link></p>
         </CardContent>
