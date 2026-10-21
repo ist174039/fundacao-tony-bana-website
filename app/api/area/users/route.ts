@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { randomBytes } from "node:crypto"
-import { getFirebaseAdminAuth, getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from "@/lib/server/firebase-admin"
+import { getFirebaseAdminAuth, getFirebaseAdminFirestore, isConfiguredAreaAdminUser, isFirebaseAdminConfigured, requireAreaAdmin } from "@/lib/server/firebase-admin"
 
 export const runtime = "nodejs"
 
@@ -13,7 +13,6 @@ export async function GET(request: Request) {
     const result = await getFirebaseAdminAuth().listUsers(1000)
     const socioSnapshot = await getFirebaseAdminFirestore().collection("area_socios").get()
     const socioByUid = new Map(socioSnapshot.docs.filter((doc) => typeof doc.get("uid") === "string").map((doc) => [doc.get("uid") as string, String(doc.get("nome") || "")]))
-    const allowlisted = new Set((process.env.FIREBASE_AREA_ADMIN_UIDS || "").split(",").map((uid) => uid.trim()).filter(Boolean))
     return NextResponse.json({
       users: result.users.map((user) => ({
         uid: user.uid,
@@ -22,7 +21,7 @@ export async function GET(request: Request) {
         disabled: user.disabled,
         createdAt: user.metadata.creationTime,
         lastSignInAt: user.metadata.lastSignInTime ?? null,
-        isAdmin: user.customClaims?.admin === true || allowlisted.has(user.uid),
+        isAdmin: isConfiguredAreaAdminUser(user),
         linkedSocio: socioByUid.get(user.uid) ?? null,
       })),
     })
@@ -93,8 +92,7 @@ export async function PATCH(request: Request) {
     if (uid && linkSocioId && typeof disabled === "undefined") {
       const auth = getFirebaseAdminAuth()
       const target = await auth.getUser(uid)
-      const allowlisted = new Set((process.env.FIREBASE_AREA_ADMIN_UIDS || "").split(",").map((value) => value.trim()).filter(Boolean))
-      if (target.customClaims?.admin === true || allowlisted.has(uid)) {
+      if (isConfiguredAreaAdminUser(target)) {
         return NextResponse.json({ error: "Uma conta administradora não pode ser associada como conta de sócio." }, { status: 400 })
       }
       const db = getFirebaseAdminFirestore()
@@ -122,13 +120,12 @@ export async function PATCH(request: Request) {
     const auth = getFirebaseAdminAuth()
     if (disabled) {
       const target = await auth.getUser(uid)
-      const allowlisted = new Set((process.env.FIREBASE_AREA_ADMIN_UIDS || "").split(",").map((value) => value.trim()).filter(Boolean))
-      if (target.customClaims?.admin === true || allowlisted.has(uid)) {
+      if (isConfiguredAreaAdminUser(target)) {
         let pageToken: string | undefined
         let activeAdmins = 0
         do {
           const page = await auth.listUsers(1000, pageToken)
-          activeAdmins += page.users.filter((user) => !user.disabled && (user.customClaims?.admin === true || allowlisted.has(user.uid))).length
+          activeAdmins += page.users.filter((user) => !user.disabled && isConfiguredAreaAdminUser(user)).length
           pageToken = page.pageToken
         } while (pageToken)
         if (activeAdmins <= 1) {

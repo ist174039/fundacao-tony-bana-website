@@ -38,23 +38,40 @@ export function getFirebaseAdminFirestore() {
   return getFirestore(getAdminApp())
 }
 
-function isAreaAdmin(decoded: { uid: string; admin?: boolean; email?: string; email_verified?: boolean }) {
+type AreaIdentity = { uid: string; admin?: boolean; email?: string; email_verified?: boolean }
+
+function configuredAreaAdminUids() {
   const allowlistedUids = (process.env.FIREBASE_AREA_ADMIN_UIDS || "")
     .split(",")
     .map((uid) => uid.trim())
     .filter(Boolean)
-  const allowlistedEmails = (process.env.FIREBASE_AREA_ADMIN_EMAILS || "")
+  return allowlistedUids
+}
+
+function configuredAreaAdminEmails() {
+  return (process.env.FIREBASE_AREA_ADMIN_EMAILS || "")
     .split(",")
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean)
+}
 
+export function isConfiguredAreaAdmin(identity: AreaIdentity) {
+  const allowlistedUids = configuredAreaAdminUids()
+  const allowlistedEmails = configuredAreaAdminEmails()
   const emailIsAllowlisted = Boolean(
-    decoded.email_verified &&
-    decoded.email &&
-    allowlistedEmails.includes(decoded.email.toLowerCase()),
+    identity.email &&
+    allowlistedEmails.includes(identity.email.toLowerCase()),
   )
 
-  return decoded.admin === true || allowlistedUids.includes(decoded.uid) || emailIsAllowlisted
+  return identity.admin === true || allowlistedUids.includes(identity.uid) || emailIsAllowlisted
+}
+
+export function isConfiguredAreaAdminUser(user: { uid: string; email?: string; emailVerified?: boolean; customClaims?: Record<string, unknown> }) {
+  return user.customClaims?.admin === true || isConfiguredAreaAdmin({
+    uid: user.uid,
+    email: user.email,
+    email_verified: user.emailVerified,
+  })
 }
 
 export async function requireAreaAdmin(request: Request) {
@@ -63,7 +80,7 @@ export async function requireAreaAdmin(request: Request) {
 
   try {
     const decoded = await getFirebaseAdminAuth().verifyIdToken(token, true)
-    return isAreaAdmin(decoded) ? decoded : null
+    return isConfiguredAreaAdmin(decoded) ? decoded : null
   } catch {
     return null
   }
@@ -75,7 +92,7 @@ export async function requireAreaAccess(request: Request) {
 
   try {
     const decoded = await getFirebaseAdminAuth().verifyIdToken(token, true)
-    if (isAreaAdmin(decoded)) return { role: "admin" as const, uid: decoded.uid }
+    if (isConfiguredAreaAdmin(decoded)) return { role: "admin" as const, uid: decoded.uid }
 
     const socios = await getFirebaseAdminFirestore()
       .collection("area_socios")

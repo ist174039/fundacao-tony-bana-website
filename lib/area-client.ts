@@ -3,7 +3,8 @@ import { auth } from "@/lib/firebase"
 export async function areaFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const user = auth.currentUser
   if (!user) throw new Error("A sessão expirou. Inicia sessão novamente.")
-  const token = await user.getIdToken()
+  // Refresh claims and email verification state after an admin changes access.
+  const token = await user.getIdToken(true)
   const response = await fetch(path, {
     ...init,
     headers: {
