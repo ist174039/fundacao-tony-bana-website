@@ -112,3 +112,43 @@ export async function requireAreaAccess(request: Request) {
     return null
   }
 }
+
+export async function resolveAreaAccess(request: Request) {
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "")
+  if (!token) return { access: null, status: 401, error: "Sessão Firebase em falta. Inicia sessão novamente." } as const
+
+  let decoded
+  try {
+    decoded = await getFirebaseAdminAuth().verifyIdToken(token, true)
+  } catch (error) {
+    const code = typeof error === "object" && error && "code" in error ? String(error.code) : "unknown"
+    console.error("[area-access] Firebase token verification failed", { code })
+    return { access: null, status: 401, error: "Não foi possível validar a sessão Firebase. Termina a sessão, entra novamente e tenta outra vez." } as const
+  }
+
+  if (isConfiguredAreaAdmin(decoded)) {
+    return { access: { role: "admin" as const, uid: decoded.uid }, status: 200, error: null }
+  }
+
+  try {
+    const socios = await getFirebaseAdminFirestore()
+      .collection("area_socios")
+      .where("uid", "==", decoded.uid)
+      .limit(1)
+      .get()
+    const socio = socios.docs[0]
+    if (socio?.get("estado") === "ativo") {
+      return {
+        access: { role: "socio" as const, uid: decoded.uid, socioId: socio.id, socioNome: String(socio.get("nome") || "") },
+        status: 200,
+        error: null,
+      }
+    }
+  } catch (error) {
+    const code = typeof error === "object" && error && "code" in error ? String(error.code) : "unknown"
+    console.error("[area-access] Firestore membership lookup failed", { code })
+    return { access: null, status: 503, error: "Não foi possível consultar as permissões no Firebase. Tenta novamente mais tarde." } as const
+  }
+
+  return { access: null, status: 403, error: "Esta conta não está autorizada. Pede ao administrador da Fundação para confirmar o acesso desta conta." } as const
+}
