@@ -81,6 +81,18 @@ export interface CarrosselItem {
   categoria?: "desporto" | "educacao" | "saude" | "comunidade"
 }
 
+export interface Socio {
+  id: string
+  uid?: string
+  nome: string
+  email: string
+  telefone?: string
+  numeroSocio?: string
+  estado: "ativo" | "inativo"
+  dataAdesao: string
+  observacoes?: string
+}
+
 export const COLLECTIONS = {
   EVENTOS: "eventos",
   PROGRAMAS: "programas",
@@ -89,6 +101,7 @@ export const COLLECTIONS = {
   MEMBROS: "membros",
   PARCEIROS: "parceiros",
   CARROSSEL: "carrossel",
+  SOCIOS: "socios",
 }
 
 // Remove undefined, functions and File objects from payloads before sending to Firestore

@@ -7,6 +7,7 @@ import CarouselSection from "@/components/carousel-section"
 import NewsSection from "@/components/news-section"
 import PartnersSection from "@/components/partners-section"
 import ContactSection from "@/components/contact-section"
+import MembershipIntentionSection from "@/components/membership-intention-section"
 import Footer from "@/components/footer"
 import { SiteContentProvider } from "@/components/site-content-provider"
 
@@ -22,6 +23,7 @@ export default function Home() {
         <CarouselSection />
         <NewsSection />
         <PartnersSection />
+        <MembershipIntentionSection />
         <ContactSection />
         <Footer />
       </main>

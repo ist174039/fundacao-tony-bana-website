@@ -35,6 +35,7 @@ import {
   CarrosselItem,
 } from "@/lib/firebase-firestore"
 import { onAuthChange, signOut } from "@/lib/firebase-auth"
+import { areaFetch } from "@/lib/area-client"
 
 type PreviewItem =
   | { kind: "noticia"; item: Noticia }
@@ -94,17 +95,34 @@ export default function AdminDashboard() {
     // Wait for persisted Firebase session restoration before requesting admin data.
     // Firestore and Storage Security Rules remain responsible for admin authorization.
     const unsubscribe = onAuthChange((user) => {
-      setAuthReady(true)
-      setIsAuthenticated(Boolean(user))
-      setUserEmail(user?.email ?? null)
-
       if (!user) {
+        setAuthReady(true)
+        setIsAuthenticated(false)
+        setUserEmail(null)
         setMembers([])
         setNews([])
         setPartners([])
         setCarrossel([])
         router.replace("/admin/login")
+        return
       }
+
+      setUserEmail(user.email ?? null)
+      void areaFetch<{ role: "admin" | "socio" }>("/api/area/session")
+        .then((access) => {
+          if (access.role !== "admin") {
+            setIsAuthenticated(false)
+            router.replace("/area")
+            return
+          }
+          setIsAuthenticated(true)
+        })
+        .catch(() => {
+          setIsAuthenticated(false)
+          setLoadError("Não foi possível validar o acesso administrativo.")
+          router.replace("/area")
+        })
+        .finally(() => setAuthReady(true))
     })
 
     return unsubscribe

@@ -114,8 +114,8 @@ export default function Header() {
           asChild
           className="hidden h-10 shrink-0 rounded-full px-5 xl:inline-flex"
         >
-          <a href="#contato">
-            Contactar <ArrowUpRight className="ml-1.5 h-4 w-4" />
+          <a href="#ser-socio">
+            Quero ser sócio <ArrowUpRight className="ml-1.5 h-4 w-4" />
           </a>
         </Button>
 
@@ -162,8 +162,8 @@ export default function Header() {
                 </a>
               ))}
               <Button asChild className="mt-2 w-full rounded-full">
-                <a href="#contato" onClick={closeMenu}>
-                  Contactar a Fundação <ArrowUpRight className="ml-2 h-4 w-4" />
+                <a href="#ser-socio" onClick={closeMenu}>
+                  Quero ser sócio <ArrowUpRight className="ml-2 h-4 w-4" />
                 </a>
               </Button>
             </nav>
