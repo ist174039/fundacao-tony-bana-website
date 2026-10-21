@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { signInWithEmail } from "@/lib/firebase-auth"
+import { areaFetch } from "@/lib/area-client"
 
 export default function AdminLoginPage() {
   const router = useRouter()
@@ -28,9 +29,10 @@ export default function AdminLoginPage() {
 
     try {
       await signInWithEmail(formData.email, formData.password)
-      router.push("/admin/dashboard")
-    } catch {
-      setError("Não foi possível iniciar sessão. Confirme as credenciais e tente novamente.")
+      const access = await areaFetch<{ role: "admin" | "socio" }>("/api/area/session")
+      router.replace(access.role === "admin" ? "/admin/dashboard" : "/area")
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Não foi possível iniciar sessão. Confirme as credenciais e tente novamente.")
       console.error("Admin sign-in failed")
     } finally {
       setLoading(false)

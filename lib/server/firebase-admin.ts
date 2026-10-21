@@ -74,57 +74,34 @@ export function isConfiguredAreaAdminUser(user: { uid: string; email?: string; e
   })
 }
 
-export async function requireAreaAdmin(request: Request) {
+async function getVerifiedAreaIdentity(request: Request) {
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "")
   if (!token) return null
 
   try {
-    const decoded = await getFirebaseAdminAuth().verifyIdToken(token)
-    return isConfiguredAreaAdmin(decoded) ? decoded : null
-  } catch {
+    return await getFirebaseAdminAuth().verifyIdToken(token)
+  } catch (error) {
+    const code = typeof error === "object" && error && "code" in error ? String(error.code) : "unknown"
+    console.error("[area-access] Firebase token verification failed", { code })
     return null
   }
 }
 
+export async function requireAreaAdmin(request: Request) {
+  const identity = await getVerifiedAreaIdentity(request)
+  return identity && isConfiguredAreaAdmin(identity) ? identity : null
+}
+
 export async function requireAreaAccess(request: Request) {
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "")
-  if (!token) return null
-
-  try {
-    const decoded = await getFirebaseAdminAuth().verifyIdToken(token)
-    if (isConfiguredAreaAdmin(decoded)) return { role: "admin" as const, uid: decoded.uid }
-
-    const socios = await getFirebaseAdminFirestore()
-      .collection("area_socios")
-      .where("uid", "==", decoded.uid)
-      .limit(1)
-      .get()
-    const socio = socios.docs[0]
-    if (!socio || socio.get("estado") !== "ativo") return null
-
-    return {
-      role: "socio" as const,
-      uid: decoded.uid,
-      socioId: socio.id,
-      socioNome: String(socio.get("nome") || ""),
-    }
-  } catch {
-    return null
-  }
+  const result = await resolveAreaAccess(request)
+  return result.access
 }
 
 export async function resolveAreaAccess(request: Request) {
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "")
   if (!token) return { access: null, status: 401, error: "Sessão Firebase em falta. Inicia sessão novamente." } as const
-
-  let decoded
-  try {
-    decoded = await getFirebaseAdminAuth().verifyIdToken(token)
-  } catch (error) {
-    const code = typeof error === "object" && error && "code" in error ? String(error.code) : "unknown"
-    console.error("[area-access] Firebase token verification failed", { code })
-    return { access: null, status: 401, error: "Não foi possível validar a sessão Firebase. Termina a sessão, entra novamente e tenta outra vez." } as const
-  }
+  const decoded = await getVerifiedAreaIdentity(request)
+  if (!decoded) return { access: null, status: 401, error: "Não foi possível validar a sessão Firebase. Termina a sessão, entra novamente e tenta outra vez." } as const
 
   if (isConfiguredAreaAdmin(decoded)) {
     return { access: { role: "admin" as const, uid: decoded.uid }, status: 200, error: null }
