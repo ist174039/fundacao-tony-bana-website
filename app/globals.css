@@ -91,4 +91,67 @@
   .site-card-interactive {
     @apply transition-all duration-300 hover:-translate-y-1 hover:border-primary/25 hover:shadow-lg hover:shadow-primary/5;
   }
+
+  .admin-panel {
+    background-image:
+      radial-gradient(ellipse at 92% 0%, hsl(var(--primary) / 0.035), transparent 34rem),
+      linear-gradient(180deg, hsl(var(--background)), hsl(var(--muted) / 0.38));
+  }
+
+  .admin-topbar {
+    box-shadow: 0 1px 0 hsl(var(--border) / 0.45), 0 8px 24px hsl(var(--foreground) / 0.025);
+  }
+
+  .admin-brand-mark {
+    box-shadow: 0 2px 8px hsl(var(--foreground) / 0.06);
+  }
+
+  .admin-page-intro {
+    background-image: linear-gradient(120deg, hsl(var(--card)), hsl(var(--background) / 0.84));
+  }
+
+  .admin-stat-card {
+    box-shadow: 0 1px 2px hsl(var(--foreground) / 0.025);
+  }
+
+  .admin-welcome-card {
+    background-image: radial-gradient(ellipse at 100% 0%, hsl(var(--primary) / 0.055), transparent 25rem);
+    box-shadow: 0 2px 10px hsl(var(--foreground) / 0.025);
+  }
+
+  .admin-chart-card {
+    box-shadow: 0 2px 10px hsl(var(--foreground) / 0.025);
+  }
+
+  .admin-tabs {
+    box-shadow: 0 2px 8px hsl(var(--foreground) / 0.025);
+  }
+
+  .admin-tab-trigger {
+    transition: color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+  }
+
+  .admin-tab-trigger[data-state="active"] {
+    box-shadow: 0 2px 7px hsl(var(--primary) / 0.16);
+  }
+
+  .admin-content-card {
+    border-color: hsl(var(--border) / 0.72);
+    border-radius: 1.1rem;
+    background: hsl(var(--card) / 0.96);
+    box-shadow: 0 2px 8px hsl(var(--foreground) / 0.025);
+  }
+
+  .admin-content-card:hover {
+    box-shadow: 0 12px 28px hsl(var(--foreground) / 0.07);
+  }
+
+  .admin-list-content {
+    padding-top: 0.25rem;
+  }
+
+  .admin-panel :is(button, a, input, textarea, select):focus-visible {
+    outline: 2px solid hsl(var(--ring) / 0.7);
+    outline-offset: 2px;
+  }
 }

@@ -35,6 +35,7 @@ import {
   CarrosselItem,
 } from "@/lib/firebase-firestore"
 import { onAuthChange, signOut } from "@/lib/firebase-auth"
+import { ContentOverviewChart } from "@/components/admin/content-overview-chart"
 
 type PreviewItem =
   | { kind: "noticia"; item: Noticia }
@@ -322,48 +323,58 @@ export default function AdminDashboard() {
   if (!isAuthenticated) return null
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="admin-panel min-h-screen bg-background text-foreground">
       {/* Header */}
-      <header className="sticky top-0 z-20 border-b border-border/70 bg-background/90 backdrop-blur">
-        <div className="container flex h-16 items-center justify-between">
+      <header className="admin-topbar sticky top-0 z-20 border-b border-border/70 bg-background/90 backdrop-blur-xl">
+        <div className="container flex h-[4.5rem] items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Image src="/logo.jpg" alt="Fundação Tony Bana" width={40} height={40} className="rounded-full" />
-            <div><h1 className="text-lg font-semibold font-montserrat">Painel administrativo</h1><p className="hidden text-xs text-muted-foreground sm:block">Fundação Tony Bana · Gestão de conteúdos</p></div>
+            <div className="admin-brand-mark flex h-11 w-11 items-center justify-center rounded-2xl border border-border/60 bg-card p-1 shadow-sm">
+              <Image src="/logo.jpg" alt="Fundação Tony Bana" width={40} height={40} className="rounded-xl object-contain" />
+            </div>
+            <div><p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-primary">Fundação Tony Bana</p><h1 className="mt-0.5 font-montserrat text-base font-semibold tracking-tight sm:text-lg">Painel de gestão</h1></div>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">{userEmail ?? "Sessão iniciada"}</span>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Sair
+            <span className="hidden max-w-56 truncate rounded-full border border-border/70 bg-card px-3.5 py-2 text-xs font-medium text-muted-foreground md:inline-flex">{userEmail ?? "Sessão iniciada"}</span>
+            <Button className="rounded-full" variant="outline" size="sm" onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />Sair
             </Button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container max-w-7xl py-8 md:py-10">
-        <div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end">
-          <div><div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary"><LayoutDashboard className="h-4 w-4"/> Visão geral</div><h2 className="text-3xl font-bold tracking-tight text-foreground">Conteúdos do site</h2><p className="mt-2 max-w-xl text-sm text-muted-foreground">Organize notícias, equipa, parceiros e imagens num só lugar.</p></div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {[{label:"Notícias",count:news.length,icon:Newspaper},{label:"Membros",count:members.length,icon:Users},{label:"Parceiros",count:partners.length,icon:Handshake},{label:"Imagens",count:carrossel.length,icon:Images}].map(({label,count,icon:Icon})=><div key={label} className="min-w-[112px] rounded-xl border border-border/70 bg-card px-3 py-2.5 shadow-sm shadow-black/10"><div className="flex items-center justify-between text-xs text-muted-foreground"><span>{label}</span><Icon className="h-3.5 w-3.5 text-primary"/></div><div className="mt-1 text-xl font-semibold text-card-foreground">{count}</div></div>)}
+      <main className="container max-w-[88rem] py-8 md:py-11">
+        <div className="admin-page-intro mb-8 rounded-[1.75rem] border border-border/60 bg-card/75 p-6 shadow-sm shadow-foreground/[0.025] sm:p-8">
+          <div className="flex flex-col justify-between gap-7 xl:flex-row xl:items-end">
+          <div className="max-w-xl"><div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/[0.045] px-3 py-1.5 text-[0.66rem] font-bold uppercase tracking-[0.17em] text-primary"><LayoutDashboard className="h-3.5 w-3.5"/> Visão geral</div><h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-[2.15rem]">Conteúdos do site</h2><p className="mt-2.5 max-w-lg text-sm leading-6 text-muted-foreground">Organize notícias, equipa, parceiros e imagens num só lugar.</p></div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[{label:"Notícias",count:news.length,icon:Newspaper},{label:"Membros",count:members.length,icon:Users},{label:"Parceiros",count:partners.length,icon:Handshake},{label:"Galeria",count:carrossel.length,icon:Images}].map(({label,count,icon:Icon})=><div key={label} className="admin-stat-card group min-w-[122px] rounded-2xl border border-border/65 bg-background/85 px-4 py-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-md hover:shadow-primary/[0.04]"><div className="flex items-center justify-between gap-3"><span className="text-xs font-medium text-muted-foreground">{label}</span><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/[0.07] text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground"><Icon className="h-4 w-4"/></span></div><div className="mt-3 text-2xl font-semibold tracking-tight text-card-foreground">{count}</div><p className="mt-0.5 text-[0.68rem] text-muted-foreground">registos publicados</p></div>)}
+          </div>
           </div>
         </div>
+        <div className="mb-7 grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(340px,0.85fr)]">
+          <div className="admin-welcome-card flex min-h-56 flex-col justify-between overflow-hidden rounded-[1.5rem] border border-border/60 bg-card p-6 sm:p-7">
+            <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Espaço de gestão</p><h3 className="mt-3 text-2xl font-semibold tracking-tight">Bem-vindo ao painel</h3><p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">Acompanha e atualiza os conteúdos que representam a Fundação no site.</p></div>
+            <div className="mt-6 flex flex-wrap gap-2 text-xs text-muted-foreground"><span className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5">{news.length + members.length + partners.length + carrossel.length} conteúdos no total</span><span className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5">Gestão editorial</span></div>
+          </div>
+          <ContentOverviewChart news={news.length} members={members.length} partners={partners.length} gallery={carrossel.length}/>
+        </div>
         {loadError && <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{loadError}</div>}
-        <Tabs defaultValue="noticias" className="space-y-5">
-    <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-xl border border-border/70 bg-card p-1.5 sm:grid-cols-4">
-            <TabsTrigger value="noticias">
+        <Tabs defaultValue="noticias" className="space-y-6">
+          <TabsList className="admin-tabs flex h-auto w-full flex-wrap justify-start gap-1.5 rounded-2xl border border-border/60 bg-card/75 p-2 shadow-sm sm:w-fit">
+            <TabsTrigger className="admin-tab-trigger rounded-xl px-4 py-2.5 text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" value="noticias">
               <Newspaper className="h-4 w-4 mr-2" />
               Notícias
             </TabsTrigger>
-            <TabsTrigger value="membros">
+            <TabsTrigger className="admin-tab-trigger rounded-xl px-4 py-2.5 text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" value="membros">
               <Users className="h-4 w-4 mr-2" />
               Membros
             </TabsTrigger>
-            <TabsTrigger value="parceiros">
+            <TabsTrigger className="admin-tab-trigger rounded-xl px-4 py-2.5 text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" value="parceiros">
               <Handshake className="h-4 w-4 mr-2" />
               Parceiros
             </TabsTrigger>
-            <TabsTrigger value="carrossel">
+            <TabsTrigger className="admin-tab-trigger rounded-xl px-4 py-2.5 text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" value="carrossel">
               <Briefcase className="h-4 w-4 mr-2" />
               Carrossel
             </TabsTrigger>
@@ -376,13 +387,13 @@ export default function AdminDashboard() {
               <div><CardTitle>Notícias</CardTitle><p className="mt-1 text-sm text-muted-foreground">Publicações e atualizações da fundação</p></div>
                 <Button onClick={() => {setEditingNews(null);setOpenNews(true)}}><Plus className="mr-2 h-4 w-4"/>Nova notícia</Button>
               </CardHeader>
-              <CardContent>
+              <CardContent className="admin-list-content">
                 {news.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">Nenhuma notícia cadastrada ainda.</div>
                 ) : (
                   <div className="grid gap-3 md:grid-cols-2">
                     {news.map((n) => (
-                      <div key={n.id} className="site-card site-card-interactive flex min-w-0 gap-4 p-3">
+                      <div key={n.id} className="admin-content-card site-card site-card-interactive flex min-w-0 gap-4 p-3.5">
                         {n.imagem ? <div className="relative h-24 w-28 shrink-0 overflow-hidden rounded-lg bg-muted"><Image src={n.imagem} alt="" fill className="object-cover"/></div> : <div className="flex h-24 w-28 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Newspaper className="h-7 w-7"/></div>}
                         <div className="flex min-w-0 flex-1 flex-col"><div className="font-semibold leading-snug">{n.titulo}</div><div className="mt-1 line-clamp-2 text-sm text-muted-foreground">{n.descricao}</div><div className="mt-auto pt-2 text-xs text-muted-foreground">{n.data}</div>
                         </div>
@@ -416,13 +427,13 @@ export default function AdminDashboard() {
               <div><CardTitle>Equipa</CardTitle><p className="mt-1 text-sm text-muted-foreground">Pessoas que fazem parte da fundação</p></div>
                 <Button onClick={() => {setEditingMember(null);setOpenMember(true)}}><Plus className="mr-2 h-4 w-4"/>Novo membro</Button>
               </CardHeader>
-              <CardContent>
+              <CardContent className="admin-list-content">
                 {members.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">Nenhum membro cadastrado ainda.</div>
                 ) : (
                   <div className="grid gap-3 md:grid-cols-2">
                     {members.map((m) => (
-                      <div key={m.id} className="site-card site-card-interactive flex items-center gap-4 p-3">
+                      <div key={m.id} className="admin-content-card site-card site-card-interactive flex items-center gap-4 p-3.5">
                         {m.imagem ? <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-muted"><Image src={m.imagem} alt={m.nome} fill className="object-cover"/></div> : <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"><Users className="h-6 w-6"/></div>}
                         <div className="min-w-0 flex-1"><div className="font-semibold">{m.nome}</div><div className="text-sm text-muted-foreground">{m.cargo}</div>
                         </div>
@@ -456,13 +467,13 @@ export default function AdminDashboard() {
               <div><CardTitle>Parceiros</CardTitle><p className="mt-1 text-sm text-muted-foreground">Organizações que apoiam o nosso trabalho</p></div>
                 <Button onClick={() => {setEditingPartner(null);setOpenPartner(true)}}><Plus className="mr-2 h-4 w-4"/>Novo parceiro</Button>
               </CardHeader>
-              <CardContent>
+              <CardContent className="admin-list-content">
                 {partners.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">Nenhum parceiro cadastrado ainda.</div>
                 ) : (
                   <div className="grid gap-3 md:grid-cols-2">
                     {partners.map((p) => (
-                      <div key={p.id} className="site-card site-card-interactive flex items-center gap-4 p-3">
+                      <div key={p.id} className="admin-content-card site-card site-card-interactive flex items-center gap-4 p-3.5">
                         {p.logo ? <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-lg border border-border bg-muted p-2"><Image src={p.logo} alt={p.nome} fill className="object-contain p-2"/></div> : <div className="flex h-16 w-20 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Handshake className="h-6 w-6"/></div>}
                         <div className="min-w-0 flex-1"><div className="font-semibold">{p.nome}</div><div className="truncate text-sm text-muted-foreground">{p.website || p.descricao}</div>
                         </div>
@@ -496,13 +507,13 @@ export default function AdminDashboard() {
               <div><CardTitle>Galerias</CardTitle><p className="mt-1 text-sm text-muted-foreground">Imagens organizadas por área de atuação</p></div>
                 <Button onClick={() => {setEditingCarousel(null);setOpenCarousel(true)}}><Plus className="mr-2 h-4 w-4"/>Adicionar imagem</Button>
               </CardHeader>
-              <CardContent>
+              <CardContent className="admin-list-content">
                 {carrossel.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">Nenhuma imagem no carrossel ainda.</div>
                 ) : (
                   <div className="space-y-8">
                     {galleryGroups.filter((group) => group.items.length > 0).map((group) => <section key={group.id} className="space-y-3"><div className="flex items-center justify-between border-b pb-2"><div><h3 className="font-semibold">{group.label}</h3><p className="text-xs text-muted-foreground">{group.items.length} {group.items.length === 1 ? "imagem" : "imagens"}</p></div></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{group.items.map((c) => (
-                      <div key={c.id} className="site-card site-card-interactive overflow-hidden">
+                      <div key={c.id} className="admin-content-card site-card site-card-interactive overflow-hidden">
                         <div className="relative aspect-[16/9] bg-muted">{c.imagem ? <Image src={c.imagem} alt={c.titulo || "Imagem da galeria"} fill className="object-cover"/> : <div className="flex h-full items-center justify-center text-muted-foreground"><Images className="h-8 w-8"/></div>}</div>
                         <div className="p-3"><div className="font-semibold">{c.titulo || "Imagem da galeria"}</div><div className="text-sm text-muted-foreground">{c.data}</div><div className="mt-3 flex gap-2">
                           {c.imagem && <Button variant="outline" size="sm" asChild><a href={c.imagem} target="_blank" rel="noreferrer"><Eye className="mr-1.5 h-4 w-4"/>Ver imagem</a></Button>}
