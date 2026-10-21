@@ -75,23 +75,23 @@ export function CarouselForm({ item, onSubmit, onCancel }: Props) {
         <Textarea id="descricao" value={formData.descricao} onChange={(e) => setFormData({ ...formData, descricao: e.target.value })} rows={4} />
       </div>
       <div>
-        <Label>Imagem</Label>
+        <Label htmlFor="carousel-image">Imagem</Label>
         <div className="flex items-center gap-4">
           {preview && (
             <div className="relative w-32 h-24">
-              <Image src={preview} alt="preview" fill className="object-cover rounded-md" />
-              <button type="button" onClick={() => { setPreview(""); setImageFile(null); }} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1">
+              <Image src={preview} alt="" fill className="rounded-md object-cover" />
+              <Button type="button" variant="destructive" size="icon" aria-label="Remover pré-visualização da imagem" onClick={() => { setPreview(""); setImageFile(null); }} className="absolute -right-2 -top-2 h-7 w-7 rounded-full shadow">
                 <X className="h-4 w-4" />
-              </button>
+              </Button>
             </div>
           )}
-          <label className="cursor-pointer">
-            <div className="flex items-center gap-2 px-4 py-2 border rounded-md hover:bg-muted">
+          <div className="flex flex-col gap-1">
+            <input id="carousel-image" type="file" accept="image/*" onChange={handleImage} className="peer sr-only" />
+            <label htmlFor="carousel-image" className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 hover:bg-muted peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2">
               <Upload className="h-4 w-4" />
               <span className="text-sm">Escolher imagem</span>
-            </div>
-            <input type="file" accept="image/*" onChange={handleImage} className="hidden" />
-          </label>
+            </label>
+          </div>
         </div>
       </div>
 

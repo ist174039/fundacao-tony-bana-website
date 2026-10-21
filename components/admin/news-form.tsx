@@ -99,30 +99,33 @@ export function NewsForm({ news, onSubmit, onCancel }: NewsFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label>Imagem</Label>
+        <Label htmlFor="news-image">Imagem</Label>
         <div className="flex items-center gap-4">
           {imagePreview && (
-            <div className="relative w-32 h-24">
-              <Image src={imagePreview || "/placeholder.svg"} alt="Preview" fill className="object-cover rounded-lg" />
-              <button
+            <div className="relative h-24 w-32">
+              <Image src={imagePreview} alt="" fill className="rounded-lg object-cover" />
+              <Button
                 type="button"
+                variant="destructive"
+                size="icon"
+                aria-label="Remover pré-visualização da imagem"
                 onClick={() => {
                   setImageFile(null)
                   setImagePreview("")
                 }}
-                className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1"
+                className="absolute -right-2 -top-2 h-7 w-7 rounded-full shadow"
               >
                 <X className="h-4 w-4" />
-              </button>
+              </Button>
             </div>
           )}
-          <label className="cursor-pointer">
-            <div className="flex items-center gap-2 px-4 py-2 border rounded-md hover:bg-muted">
+          <div className="flex flex-col gap-1">
+            <input id="news-image" type="file" accept="image/*" onChange={handleImageChange} className="peer sr-only" />
+            <label htmlFor="news-image" className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 hover:bg-muted peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2">
               <Upload className="h-4 w-4" />
               <span className="text-sm">Escolher imagem</span>
-            </div>
-            <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-          </label>
+            </label>
+          </div>
         </div>
       </div>
 

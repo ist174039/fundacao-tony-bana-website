@@ -7,7 +7,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { LogOut, Users, Newspaper, Briefcase, Handshake, Eye, Pencil, Trash2, Plus, Images, LayoutDashboard } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { CarouselForm } from "@/components/admin/carousel-form"
 import { MemberForm } from "@/components/admin/member-form"
 import { NewsForm } from "@/components/admin/news-form"
@@ -44,6 +54,7 @@ export default function AdminDashboard() {
   const [openCarousel, setOpenCarousel] = useState(false)
   const [previewItem, setPreviewItem] = useState<{ kind: "noticia" | "membro" | "parceiro"; item: any } | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<{ collectionName: string; id: string; label: string } | null>(null)
   const galleryGroups = [
     { id: "desporto", label: "Desporto", items: carrossel.filter((item) => item.categoria === "desporto") },
     { id: "educacao", label: "Educação", items: carrossel.filter((item) => item.categoria === "educacao") },
@@ -273,17 +284,20 @@ export default function AdminDashboard() {
     }
   }
 
-  const handleDelete = async (collectionName: string, id: string) => {
+  const handleDelete = async () => {
+    if (!pendingDelete) return
     try {
       if (!isAuthenticated) {
         alert("Você precisa estar logado para remover itens. Redirecionando para login.")
         router.push("/admin/login")
         return
       }
-      await deleteDocument(collectionName, id)
+      await deleteDocument(pendingDelete.collectionName, pendingDelete.id)
+      setPendingDelete(null)
       await loadAll()
     } catch (err) {
       console.error("Error deleting:", err)
+      setLoadError("Não foi possível remover este conteúdo. Tente novamente.")
     }
   }
 
@@ -383,7 +397,7 @@ export default function AdminDashboard() {
                           >
                             <Pencil className="mr-1.5 h-4 w-4"/>Editar
                           </Button>
-                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDelete(COLLECTIONS.NOTICIAS, n.id)}>
+                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setPendingDelete({ collectionName: COLLECTIONS.NOTICIAS, id: n.id, label: n.titulo })}>
                             <Trash2 className="mr-1.5 h-4 w-4"/>Remover
                           </Button>
                         </div>
@@ -423,7 +437,7 @@ export default function AdminDashboard() {
                           >
                             <Pencil className="mr-1.5 h-4 w-4"/>Editar
                           </Button>
-                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDelete(COLLECTIONS.MEMBROS, m.id)}>
+                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setPendingDelete({ collectionName: COLLECTIONS.MEMBROS, id: m.id, label: m.nome })}>
                             <Trash2 className="mr-1.5 h-4 w-4"/>Remover
                           </Button>
                         </div>
@@ -463,7 +477,7 @@ export default function AdminDashboard() {
                           >
                             <Pencil className="mr-1.5 h-4 w-4"/>Editar
                           </Button>
-                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDelete(COLLECTIONS.PARCEIROS, p.id)}>
+                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setPendingDelete({ collectionName: COLLECTIONS.PARCEIROS, id: p.id, label: p.nome })}>
                             <Trash2 className="mr-1.5 h-4 w-4"/>Remover
                           </Button>
                         </div>
@@ -493,7 +507,7 @@ export default function AdminDashboard() {
                         <div className="p-3"><div className="font-semibold">{c.titulo || "Imagem da galeria"}</div><div className="text-sm text-muted-foreground">{c.data}</div><div className="mt-3 flex gap-2">
                           {c.imagem && <Button variant="outline" size="sm" asChild><a href={c.imagem} target="_blank" rel="noreferrer"><Eye className="mr-1.5 h-4 w-4"/>Ver imagem</a></Button>}
                           <Button variant="outline" size="sm" onClick={() => {setEditingCarousel(c);setOpenCarousel(true)}}><Pencil className="mr-1.5 h-4 w-4"/>Editar</Button>
-                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDelete(COLLECTIONS.CARROSSEL, c.id)}><Trash2 className="h-4 w-4"/></Button>
+                          <Button variant="ghost" size="sm" aria-label={`Remover ${c.titulo || "imagem"} da galeria`} className="text-destructive hover:text-destructive" onClick={() => setPendingDelete({ collectionName: COLLECTIONS.CARROSSEL, id: c.id, label: c.titulo || "imagem da galeria" })}><Trash2 className="h-4 w-4"/></Button>
                         </div>
                         </div>
                       </div>
@@ -511,6 +525,7 @@ export default function AdminDashboard() {
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{editingMember ? "Editar membro" : "Adicionar membro"}</DialogTitle>
+            <DialogDescription>Preencha os dados da pessoa e adicione a fotografia que será apresentada no site.</DialogDescription>
           </DialogHeader>
           <MemberForm
             member={editingMember ?? undefined}
@@ -527,6 +542,7 @@ export default function AdminDashboard() {
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{editingNews ? "Editar notícia" : "Adicionar notícia"}</DialogTitle>
+            <DialogDescription>Preencha o título, a data e a descrição da publicação. A imagem e a ligação são opcionais.</DialogDescription>
           </DialogHeader>
           <NewsForm
             news={editingNews ?? undefined}
@@ -543,6 +559,7 @@ export default function AdminDashboard() {
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{editingPartner ? "Editar parceiro" : "Adicionar parceiro"}</DialogTitle>
+            <DialogDescription>Preencha a identificação do parceiro e os detalhes que pretende apresentar no site.</DialogDescription>
           </DialogHeader>
           <PartnerForm
             partner={editingPartner ?? undefined}
@@ -558,6 +575,7 @@ export default function AdminDashboard() {
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{editingCarousel ? "Editar imagem da galeria" : "Adicionar imagem à galeria"}</DialogTitle>
+            <DialogDescription>Escolha a galeria e adicione a imagem com a data e a descrição da atividade.</DialogDescription>
           </DialogHeader>
           <CarouselForm
             item={editingCarousel ?? undefined}
@@ -573,6 +591,7 @@ export default function AdminDashboard() {
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{previewItem?.item?.titulo || previewItem?.item?.nome}</DialogTitle>
+            <DialogDescription>Pré-visualização dos detalhes deste conteúdo.</DialogDescription>
           </DialogHeader>
           {previewItem && <div className="space-y-4">
             {previewItem.item.imagem || previewItem.item.logo ? <div className="relative aspect-[16/9] overflow-hidden rounded-xl bg-muted"><Image src={previewItem.item.imagem || previewItem.item.logo} alt={previewItem.item.titulo || previewItem.item.nome} fill className="object-contain" /></div> : null}
@@ -585,6 +604,22 @@ export default function AdminDashboard() {
           </div>}
         </DialogContent>
       </Dialog>
+      <AlertDialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover conteúdo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação remove “{pendingDelete?.label}” do site e não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void handleDelete()} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

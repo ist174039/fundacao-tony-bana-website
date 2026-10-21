@@ -85,35 +85,38 @@ export function PartnerForm({ partner, onSubmit, onCancel }: PartnerFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label>Logo</Label>
+        <Label htmlFor="partner-logo">Logo</Label>
         <div className="flex items-center gap-4">
           {logoPreview && (
             <div className="relative w-24 h-24">
               <Image
-                src={logoPreview || "/placeholder.svg"}
-                alt="Preview"
+                src={logoPreview}
+                alt=""
                 fill
                 className="object-contain rounded-lg border p-2"
               />
-              <button
+              <Button
                 type="button"
+                variant="destructive"
+                size="icon"
+                aria-label="Remover pré-visualização do logótipo"
                 onClick={() => {
                   setLogoFile(null)
                   setLogoPreview("")
                 }}
-                className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1"
+                className="absolute -right-2 -top-2 h-7 w-7 rounded-full shadow"
               >
                 <X className="h-4 w-4" />
-              </button>
+              </Button>
             </div>
           )}
-          <label className="cursor-pointer">
-            <div className="flex items-center gap-2 px-4 py-2 border rounded-md hover:bg-muted">
+          <div className="flex flex-col gap-1">
+            <input id="partner-logo" type="file" accept="image/*" onChange={handleLogoChange} className="peer sr-only" />
+            <label htmlFor="partner-logo" className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 hover:bg-muted peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2">
               <Upload className="h-4 w-4" />
               <span className="text-sm">Escolher logo</span>
-            </div>
-            <input type="file" accept="image/*" onChange={handleLogoChange} className="hidden" />
-          </label>
+            </label>
+          </div>
         </div>
       </div>
 
