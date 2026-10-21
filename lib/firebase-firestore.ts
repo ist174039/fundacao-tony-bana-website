@@ -139,21 +139,6 @@ function findNonSerializableFields(obj: any, basePath = ""): string[] {
   return problems
 }
 
-// Safe stringify that converts Firestore Timestamp objects to ISO strings when possible
-function safeStringify(obj: any) {
-  return JSON.stringify(obj, (_k, v) => {
-    // detect firebase Timestamp-ish objects
-    if (v && typeof v === "object" && typeof (v as any).toDate === "function") {
-      try {
-        return (v as any).toDate().toISOString()
-      } catch {
-        return String(v)
-      }
-    }
-    return v
-  }, 2)
-}
-
 // Get all documents from a collection
 export async function getCollection<T>(collectionName: string): Promise<T[]> {
   try {
@@ -191,11 +176,8 @@ export async function addDocument<T>(collectionName: string, data: Partial<T>): 
     const problems = findNonSerializableFields(payload)
     if (problems.length > 0) {
       console.error(`Payload contains non-serializable fields: ${problems.join(", ")}`)
-      console.error("Payload preview:", safeStringify(payload))
       throw new Error(`Payload contains non-serializable fields: ${problems.join(", ")}`)
     }
-    console.debug(`Adding document to ${collectionName}`)
-    console.debug(safeStringify(payload))
     const docRef = await addDoc(collection(db, collectionName), {
       ...payload,
       createdAt: Timestamp.now(),
@@ -215,11 +197,8 @@ export async function updateDocument<T>(collectionName: string, id: string, data
     const problems = findNonSerializableFields(payload)
     if (problems.length > 0) {
       console.error(`Payload contains non-serializable fields: ${problems.join(", ")}`)
-      console.error("Payload preview:", safeStringify(payload))
       throw new Error(`Payload contains non-serializable fields: ${problems.join(", ")}`)
     }
-    console.debug(`Updating document ${id} in ${collectionName}`)
-    console.debug(safeStringify(payload))
     const docRef = doc(db, collectionName, id)
     await updateDoc(docRef, {
       ...payload,

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -23,11 +23,13 @@ import {
   Membro,
   Parceiro,
 } from "@/lib/firebase-firestore"
-import { auth } from "@/lib/firebase"
+import { onAuthChange, signOut } from "@/lib/firebase-auth"
 
 export default function AdminDashboard() {
   const router = useRouter()
-  const [userEmail] = useState("admin@fundacaotony bana.org")
+  const [authReady, setAuthReady] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
   const [openMember, setOpenMember] = useState(false)
   const [openNews, setOpenNews] = useState(false)
   const [openPartner, setOpenPartner] = useState(false)
@@ -41,6 +43,7 @@ export default function AdminDashboard() {
   const [editingCarousel, setEditingCarousel] = useState<any | null>(null)
   const [openCarousel, setOpenCarousel] = useState(false)
   const [previewItem, setPreviewItem] = useState<{ kind: "noticia" | "membro" | "parceiro"; item: any } | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const galleryGroups = [
     { id: "desporto", label: "Desporto", items: carrossel.filter((item) => item.categoria === "desporto") },
     { id: "educacao", label: "Educação", items: carrossel.filter((item) => item.categoria === "educacao") },
@@ -48,7 +51,7 @@ export default function AdminDashboard() {
     { id: "comunidade", label: "Comunidade / geral", items: carrossel.filter((item) => !item.categoria || item.categoria === "comunidade") },
   ]
 
-  const loadAll = async () => {
+  const loadAll = useCallback(async () => {
     try {
       const [m, n, p, c] = await Promise.all([
         getCollection<Membro>(COLLECTIONS.MEMBROS),
@@ -60,17 +63,41 @@ export default function AdminDashboard() {
       setNews(n)
       setPartners(p)
       setCarrossel(c)
+      setLoadError(null)
     } catch (err) {
-      console.error("Error loading collections:", err)
+      console.error("Error loading admin collections:", err)
+      setLoadError("Não foi possível carregar os conteúdos. Confirme o acesso e tente novamente.")
     }
-  }
-
-  useEffect(() => {
-    loadAll()
   }, [])
 
+  useEffect(() => {
+    // Wait for persisted Firebase session restoration before requesting admin data.
+    // Firestore and Storage Security Rules remain responsible for admin authorization.
+    const unsubscribe = onAuthChange((user) => {
+      setAuthReady(true)
+      setIsAuthenticated(Boolean(user))
+      setUserEmail(user?.email ?? null)
+
+      if (!user) {
+        setMembers([])
+        setNews([])
+        setPartners([])
+        setCarrossel([])
+        router.replace("/admin/login")
+      }
+    })
+
+    return unsubscribe
+  }, [router])
+
+  useEffect(() => {
+    if (!authReady || !isAuthenticated) return
+    setLoadError(null)
+    void loadAll()
+  }, [authReady, isAuthenticated, loadAll])
+
   const handleAddMember = async (data: any, imageFile?: File) => {
-    if (!auth.currentUser) {
+    if (!isAuthenticated) {
       alert("Você precisa estar logado para adicionar membros. Redirecionando para login.")
       router.push("/admin/login")
       return
@@ -91,7 +118,7 @@ export default function AdminDashboard() {
 
   const handleUpdateMember = async (data: any, imageFile?: File) => {
     if (!editingMember) return
-    if (!auth.currentUser) {
+    if (!isAuthenticated) {
       alert("Você precisa estar logado para atualizar membros. Redirecionando para login.")
       router.push("/admin/login")
       return
@@ -115,7 +142,7 @@ export default function AdminDashboard() {
   }
 
   const handleAddNews = async (data: any, imageFile?: File) => {
-    if (!auth.currentUser) {
+    if (!isAuthenticated) {
       alert("Você precisa estar logado para adicionar notícias. Redirecionando para login.")
       router.push("/admin/login")
       return
@@ -136,7 +163,7 @@ export default function AdminDashboard() {
 
   const handleUpdateNews = async (data: any, imageFile?: File) => {
     if (!editingNews) return
-    if (!auth.currentUser) {
+    if (!isAuthenticated) {
       alert("Você precisa estar logado para atualizar notícias. Redirecionando para login.")
       router.push("/admin/login")
       return
@@ -160,7 +187,7 @@ export default function AdminDashboard() {
   }
 
   const handleAddPartner = async (data: any, logoFile?: File) => {
-    if (!auth.currentUser) {
+    if (!isAuthenticated) {
       alert("Você precisa estar logado para adicionar parceiros. Redirecionando para login.")
       router.push("/admin/login")
       return
@@ -181,7 +208,7 @@ export default function AdminDashboard() {
 
   const handleUpdatePartner = async (data: any, logoFile?: File) => {
     if (!editingPartner) return
-    if (!auth.currentUser) {
+    if (!isAuthenticated) {
       alert("Você precisa estar logado para atualizar parceiros. Redirecionando para login.")
       router.push("/admin/login")
       return
@@ -205,7 +232,7 @@ export default function AdminDashboard() {
   }
 
   const handleAddCarousel = async (data: any, imageFile?: File) => {
-    if (!auth.currentUser) {
+    if (!isAuthenticated) {
       alert("Você precisa estar logado para adicionar imagens ao carrossel. Redirecionando para login.")
       router.push("/admin/login")
       return
@@ -226,7 +253,7 @@ export default function AdminDashboard() {
 
   const handleUpdateCarousel = async (data: any, imageFile?: File) => {
     if (!editingCarousel) return
-    if (!auth.currentUser) {
+    if (!isAuthenticated) {
       alert("Você precisa estar logado para atualizar o carrossel. Redirecionando para login.")
       router.push("/admin/login")
       return
@@ -248,7 +275,7 @@ export default function AdminDashboard() {
 
   const handleDelete = async (collectionName: string, id: string) => {
     try {
-      if (!auth.currentUser) {
+      if (!isAuthenticated) {
         alert("Você precisa estar logado para remover itens. Redirecionando para login.")
         router.push("/admin/login")
         return
@@ -260,10 +287,25 @@ export default function AdminDashboard() {
     }
   }
 
-  const handleLogout = () => {
-    // TODO: Implement Firebase logout
-    router.push("/admin/login")
+  const handleLogout = async () => {
+    try {
+      await signOut()
+      router.replace("/admin/login")
+    } catch (err) {
+      console.error("Error signing out:", err)
+      alert("Não foi possível terminar a sessão. Tente novamente.")
+    }
   }
+
+  if (!authReady) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background px-6 text-foreground">
+        <p role="status" className="text-sm text-muted-foreground">A verificar a sessão…</p>
+      </main>
+    )
+  }
+
+  if (!isAuthenticated) return null
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -275,7 +317,7 @@ export default function AdminDashboard() {
             <div><h1 className="text-lg font-semibold font-montserrat">Painel administrativo</h1><p className="hidden text-xs text-muted-foreground sm:block">Fundação Tony Bana · Gestão de conteúdos</p></div>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">{userEmail}</span>
+            <span className="text-sm text-muted-foreground">{userEmail ?? "Sessão iniciada"}</span>
             <Button variant="outline" size="sm" onClick={handleLogout}>
               <LogOut className="h-4 w-4 mr-2" />
               Sair
@@ -292,6 +334,7 @@ export default function AdminDashboard() {
             {[{label:"Notícias",count:news.length,icon:Newspaper},{label:"Membros",count:members.length,icon:Users},{label:"Parceiros",count:partners.length,icon:Handshake},{label:"Imagens",count:carrossel.length,icon:Images}].map(({label,count,icon:Icon})=><div key={label} className="min-w-[112px] rounded-xl border border-border/70 bg-card px-3 py-2.5 shadow-sm shadow-black/10"><div className="flex items-center justify-between text-xs text-muted-foreground"><span>{label}</span><Icon className="h-3.5 w-3.5 text-primary"/></div><div className="mt-1 text-xl font-semibold text-card-foreground">{count}</div></div>)}
           </div>
         </div>
+        {loadError && <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{loadError}</div>}
         <Tabs defaultValue="noticias" className="space-y-5">
     <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-xl border border-border/70 bg-card p-1.5 sm:grid-cols-4">
             <TabsTrigger value="noticias">
