@@ -28,7 +28,7 @@ export default function AdminLoginPage() {
 
     try {
       await signInWithEmail(formData.email, formData.password)
-      router.push("/area")
+      router.push("/admin/dashboard")
     } catch {
       setError("Não foi possível iniciar sessão. Confirme as credenciais e tente novamente.")
       console.error("Admin sign-in failed")
