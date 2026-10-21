@@ -24,7 +24,7 @@ export default function AreaPage() {
 
   useEffect(() => onAuthChange((user) => {
     if (!user) {
-      router.replace("/admin/login")
+      router.replace("/area/login")
       return
     }
     setEmail(user.email || "")
@@ -36,7 +36,7 @@ export default function AreaPage() {
 
   const logout = async () => {
     await signOut()
-    router.replace("/admin/login")
+    router.replace("/area/login")
   }
 
   if (!ready) return <main className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">A verificar a sessão…</main>
