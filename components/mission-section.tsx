@@ -3,35 +3,24 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
+import { SectionHeading } from "@/components/section-heading";
 
 export default function MissionSection() {
   return (
     <section
       id="missao"
-      className="relative overflow-hidden border-y border-border bg-muted/50 py-20 md:py-28"
+      className="site-section relative overflow-hidden border-y border-border bg-muted/50"
     >
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -left-24 top-10 h-72 w-72 rounded-full bg-primary/10 blur-[100px]"
       />
       <div className="container relative">
-        <motion.div
-          initial={false}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mb-12 max-w-3xl"
-        >
-          <p className="mono-label mb-4 text-accent">01 / A Fundação</p>
-          <h2 className="mb-4 font-montserrat text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
-            A nossa missão é abrir{" "}
-            <span className="text-primary">caminhos.</span>
-          </h2>
-          <p className="max-w-2xl text-lg leading-7 text-muted-foreground">
-            Melhorar a qualidade de vida nas comunidades, com foco em educação,
-            saúde e desporto.
-          </p>
-        </motion.div>
+        <SectionHeading
+          eyebrow="01 / A Fundação"
+          title={<>A nossa missão é abrir <span className="text-primary">caminhos.</span></>}
+          description="Criamos oportunidades para que cada pessoa desenvolva o seu potencial e participe ativamente na comunidade."
+        />
         <div className="grid gap-12 lg:grid-cols-2 items-center">
           <motion.div
             initial={false}

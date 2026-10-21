@@ -6,6 +6,8 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { signInWithEmail } from "@/lib/firebase-auth"
@@ -27,9 +29,9 @@ export default function AdminLoginPage() {
     try {
       await signInWithEmail(formData.email, formData.password)
       router.push("/admin/dashboard")
-    } catch (err: any) {
-      setError(err.message || "Erro ao autenticar. Verifique suas credenciais.")
-      console.error(err)
+    } catch {
+      setError("Não foi possível iniciar sessão. Confirme as credenciais e tente novamente.")
+      console.error("Admin sign-in failed")
     } finally {
       setLoading(false)
     }
@@ -38,7 +40,7 @@ export default function AdminLoginPage() {
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background p-4 text-foreground">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top, hsl(var(--primary)/0.22), transparent_52%)]" />
-      <Card className="relative w-full max-w-md border-border/70 bg-card shadow-2xl shadow-black/30">
+      <Card className="site-card relative w-full max-w-md shadow-2xl shadow-black/30">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <Image src="/logo.jpg" alt="Fundação Tony Bana" width={100} height={100} className="rounded-full" />
@@ -48,12 +50,12 @@ export default function AdminLoginPage() {
           <p className="mt-2 text-sm text-muted-foreground">Entre com as suas credenciais para gerir os conteúdos.</p>
         </CardHeader>
         <CardContent>
-          {error && <div className="mb-4 p-3 bg-destructive/10 text-destructive text-sm rounded-md">{error}</div>}
+          {error && <Alert variant="destructive" className="mb-4"><AlertDescription>{error}</AlertDescription></Alert>}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
+              <Label htmlFor="email">
                 Email
-              </label>
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -64,9 +66,9 @@ export default function AdminLoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
+              <Label htmlFor="password">
                 Senha
-              </label>
+              </Label>
               <Input
                 id="password"
                 type="password"

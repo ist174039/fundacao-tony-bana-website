@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, ArrowRight, Newspaper } from "lucide-react";
@@ -8,72 +9,39 @@ import { motion } from "framer-motion";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { getCollection, COLLECTIONS, Noticia } from "@/lib/firebase-firestore";
+import type { Noticia } from "@/lib/firebase-firestore";
+import { useSiteContent } from "@/components/site-content-provider";
+import { SectionHeading } from "@/components/section-heading";
 
 export default function NewsSection() {
-  const [newsItems, setNewsItems] = useState<Noticia[]>([]);
+  const { news: newsItems } = useSiteContent();
   const [selected, setSelected] = useState<Noticia | null>(null);
   const [showAll, setShowAll] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-    getCollection<Noticia>(COLLECTIONS.NOTICIAS)
-      .then((items) => {
-        if (!mounted) return;
-        // sort by date or createdAt if available
-        const sorted = items.sort((a: any, b: any) => {
-          const da = new Date(a.data || a.createdAt?.toDate?.() || 0).getTime();
-          const db = new Date(b.data || b.createdAt?.toDate?.() || 0).getTime();
-          return db - da;
-        });
-        setNewsItems(sorted);
-      })
-      .catch((err) => console.error(err));
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   if (newsItems.length === 0) return null;
 
   return (
     <section
       id="noticias"
-      className="border-y border-border/70 bg-muted/40 py-20"
+      className="site-section border-y border-border/70 bg-muted/40"
     >
       <div className="container">
-        <motion.div
-          initial={false}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mb-10 flex flex-col gap-5 md:flex-row md:items-end md:justify-between"
-        >
-          <div>
-            <p className="mb-3 inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-primary">
-              <Newspaper className="h-4 w-4" /> Acompanhe o nosso trabalho
-            </p>
-            <h2 className="font-montserrat text-3xl font-bold text-balance md:text-4xl">
-              Notícias e <span className="text-primary">actividades</span>
-            </h2>
-            <p className="mt-3 max-w-2xl text-muted-foreground">
-              Histórias, iniciativas e conquistas recentes da Fundação.
-            </p>
-          </div>
-          {newsItems.length > 3 && (
-            <Button
-              variant="outline"
-              onClick={() => setShowAll(!showAll)}
-              className="shrink-0"
-            >
+        <SectionHeading
+          eyebrow="Acompanhe o nosso trabalho"
+          icon={<Newspaper className="h-4 w-4" aria-hidden="true" />}
+          title={<>Notícias e <span className="text-primary">actividades</span></>}
+          description="Histórias, iniciativas e conquistas recentes da Fundação."
+          aside={newsItems.length > 3 ? (
+            <Button variant="outline" onClick={() => setShowAll((value) => !value)} className="w-fit shrink-0 rounded-full px-5">
               {showAll ? "Mostrar menos" : "Ver todas as notícias"}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
-          )}
-        </motion.div>
+          ) : null}
+        />
 
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {(showAll ? newsItems : newsItems.slice(0, 3)).map((item, index) => (
@@ -84,13 +52,15 @@ export default function NewsSection() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: index * 0.15 }}
             >
-              <Card className="group h-full overflow-hidden rounded-2xl border-border/70 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+              <Card className="site-card site-card-interactive group h-full overflow-hidden">
                 <div className="relative h-52 overflow-hidden">
                   {item.imagem ? (
-                    <img
+                    <Image
                       src={item.imagem}
                       alt={item.titulo}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center bg-primary/5 text-primary/50">
@@ -130,14 +100,17 @@ export default function NewsSection() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{selected?.titulo}</DialogTitle>
+            <DialogDescription>Leia os detalhes da notícia e abra a publicação original, se disponível.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             {selected?.imagem && (
               <div className="w-full h-64 relative overflow-hidden">
-                <img
+                <Image
                   src={selected.imagem}
                   alt={selected.titulo}
-                  className="w-full h-full object-contain"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-contain"
                 />
               </div>
             )}

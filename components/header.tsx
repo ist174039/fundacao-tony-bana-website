@@ -6,7 +6,7 @@ import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { COLLECTIONS, getCollection } from "@/lib/firebase-firestore";
+import { useSiteContent } from "@/components/site-content-provider";
 
 const fixedNavigation = [
   { href: "#missao", label: "A Fundação" },
@@ -17,7 +17,13 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [availableSections, setAvailableSections] = useState<string[]>([]);
+  const { members, news, partners, gallery } = useSiteContent();
+  const availableSections = [
+    members.length > 0 && "membros",
+    gallery.length > 0 && "carrossel",
+    news.length > 0 && "noticias",
+    partners.length > 0 && "parceiros",
+  ].filter((section): section is string => Boolean(section));
 
   const navigationItems = [
     ...fixedNavigation,
@@ -47,33 +53,6 @@ export default function Header() {
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  useEffect(() => {
-    let mounted = true;
-    Promise.all([
-      getCollection(COLLECTIONS.MEMBROS)
-        .then((items) => (items.length ? "membros" : null))
-        .catch(() => null),
-      getCollection(COLLECTIONS.CARROSSEL)
-        .then((items) => (items.length ? "carrossel" : null))
-        .catch(() => null),
-      getCollection(COLLECTIONS.NOTICIAS)
-        .then((items) => (items.length ? "noticias" : null))
-        .catch(() => null),
-      getCollection(COLLECTIONS.PARCEIROS)
-        .then((items) => (items.length ? "parceiros" : null))
-        .catch(() => null),
-    ]).then((sections) => {
-      if (mounted) {
-        setAvailableSections(
-          sections.filter((section): section is string => Boolean(section)),
-        );
-      }
-    });
-    return () => {
-      mounted = false;
-    };
   }, []);
 
   const closeMenu = () => setIsMenuOpen(false);

@@ -79,4 +79,16 @@
   .surface-panel {
     @apply rounded-2xl border border-border bg-card shadow-xl shadow-foreground/10 backdrop-blur-sm;
   }
+
+  .site-section {
+    @apply py-20 md:py-28;
+  }
+
+  .site-card {
+    @apply rounded-2xl border border-border/70 bg-card shadow-sm;
+  }
+
+  .site-card-interactive {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:border-primary/25 hover:shadow-lg hover:shadow-primary/5;
+  }
 }

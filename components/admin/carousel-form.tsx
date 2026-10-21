@@ -1,22 +1,22 @@
 "use client"
 
-import React, { useState } from "react"
+import { useState, type FormEvent } from "react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import Image from "next/image"
-import { Upload, X } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import { ImageUploadField } from "@/components/admin/image-upload-field"
 import type { CarrosselItem } from "@/lib/firebase-firestore"
 
-interface Props {
+interface CarouselFormProps {
   item?: CarrosselItem
   onSubmit: (data: Partial<CarrosselItem>, imageFile?: File) => Promise<void>
   onCancel: () => void
 }
 
-export function CarouselForm({ item, onSubmit, onCancel }: Props) {
+export function CarouselForm({ item, onSubmit, onCancel }: CarouselFormProps) {
   const [formData, setFormData] = useState<Partial<CarrosselItem>>({
     titulo: item?.titulo || "",
     descricao: item?.descricao || "",
@@ -25,24 +25,17 @@ export function CarouselForm({ item, onSubmit, onCancel }: Props) {
     categoria: item?.categoria || "comunidade",
   })
   const [imageFile, setImageFile] = useState<File | null>(null)
-  const [preview, setPreview] = useState<string>(item?.imagem || "")
   const [loading, setLoading] = useState(false)
+  const [submitError, setSubmitError] = useState("")
 
-  const handleImage = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0]
-    if (f) {
-      setImageFile(f)
-      const r = new FileReader()
-      r.onloadend = () => setPreview(r.result as string)
-      r.readAsDataURL(f)
-    }
-  }
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setSubmitError("")
     setLoading(true)
     try {
       await onSubmit(formData, imageFile || undefined)
+    } catch {
+      setSubmitError("Não foi possível guardar a imagem. Tente novamente.")
     } finally {
       setLoading(false)
     }
@@ -50,13 +43,21 @@ export function CarouselForm({ item, onSubmit, onCancel }: Props) {
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <div>
+      <div className="space-y-2">
         <Label htmlFor="titulo">Título (opcional)</Label>
-        <Input id="titulo" value={formData.titulo} onChange={(e) => setFormData({ ...formData, titulo: e.target.value })} />
+        <Input
+          id="titulo"
+          value={formData.titulo}
+          onChange={(event) => setFormData({ ...formData, titulo: event.target.value })}
+        />
       </div>
-      <div>
+
+      <div className="space-y-2">
         <Label htmlFor="categoria">Galeria</Label>
-        <Select value={formData.categoria || "comunidade"} onValueChange={(value: "desporto" | "educacao" | "saude" | "comunidade") => setFormData({ ...formData, categoria: value })}>
+        <Select
+          value={formData.categoria || "comunidade"}
+          onValueChange={(value: NonNullable<CarrosselItem["categoria"]>) => setFormData({ ...formData, categoria: value })}
+        >
           <SelectTrigger id="categoria"><SelectValue placeholder="Escolher galeria" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="desporto">Desporto</SelectItem>
@@ -66,38 +67,46 @@ export function CarouselForm({ item, onSubmit, onCancel }: Props) {
           </SelectContent>
         </Select>
       </div>
-      <div>
+
+      <div className="space-y-2">
         <Label htmlFor="data">Data</Label>
-        <Input id="data" type="date" value={formData.data} onChange={(e) => setFormData({ ...formData, data: e.target.value })} />
-      </div>
-      <div>
-        <Label htmlFor="descricao">Descrição</Label>
-        <Textarea id="descricao" value={formData.descricao} onChange={(e) => setFormData({ ...formData, descricao: e.target.value })} rows={4} />
-      </div>
-      <div>
-        <Label htmlFor="carousel-image">Imagem</Label>
-        <div className="flex items-center gap-4">
-          {preview && (
-            <div className="relative w-32 h-24">
-              <Image src={preview} alt="" fill className="rounded-md object-cover" />
-              <Button type="button" variant="destructive" size="icon" aria-label="Remover pré-visualização da imagem" onClick={() => { setPreview(""); setImageFile(null); }} className="absolute -right-2 -top-2 h-7 w-7 rounded-full shadow">
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-          <div className="flex flex-col gap-1">
-            <input id="carousel-image" type="file" accept="image/*" onChange={handleImage} className="peer sr-only" />
-            <label htmlFor="carousel-image" className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 hover:bg-muted peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2">
-              <Upload className="h-4 w-4" />
-              <span className="text-sm">Escolher imagem</span>
-            </label>
-          </div>
-        </div>
+        <Input
+          id="data"
+          type="date"
+          value={formData.data}
+          onChange={(event) => setFormData({ ...formData, data: event.target.value })}
+        />
       </div>
 
-      <div className="flex gap-2 justify-end">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>Cancelar</Button>
-        <Button type="submit" disabled={loading}>{loading ? "Salvando..." : item ? "Atualizar" : "Adicionar"}</Button>
+      <div className="space-y-2">
+        <Label htmlFor="descricao">Descrição</Label>
+        <Textarea
+          id="descricao"
+          value={formData.descricao}
+          onChange={(event) => setFormData({ ...formData, descricao: event.target.value })}
+          rows={4}
+        />
+      </div>
+
+      <ImageUploadField
+        id="carousel-image"
+        label="imagem"
+        value={formData.imagem}
+        onChange={(file) => {
+          setImageFile(file)
+          if (!file) setFormData((current) => ({ ...current, imagem: "" }))
+        }}
+      />
+
+      {submitError && <Alert variant="destructive"><AlertDescription>{submitError}</AlertDescription></Alert>}
+
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
+          Cancelar
+        </Button>
+        <Button type="submit" disabled={loading}>
+          {loading ? "A guardar…" : item ? "Atualizar" : "Adicionar"}
+        </Button>
       </div>
     </form>
   )

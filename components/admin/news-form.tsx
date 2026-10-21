@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Upload, X } from "lucide-react"
-import Image from "next/image"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { ImageUploadField } from "@/components/admin/image-upload-field"
 import type { Noticia } from "@/lib/firebase-firestore"
 
 interface NewsFormProps {
@@ -28,26 +28,17 @@ export function NewsForm({ news, onSubmit, onCancel }: NewsFormProps) {
     destaque: news?.destaque || false,
   })
   const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string>(news?.imagem || "")
   const [loading, setLoading] = useState(false)
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setImageFile(file)
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
+  const [submitError, setSubmitError] = useState("")
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSubmitError("")
     setLoading(true)
     try {
       await onSubmit(formData, imageFile || undefined)
+    } catch {
+      setSubmitError("Não foi possível guardar a notícia. Tente novamente.")
     } finally {
       setLoading(false)
     }
@@ -98,36 +89,17 @@ export function NewsForm({ news, onSubmit, onCancel }: NewsFormProps) {
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="news-image">Imagem</Label>
-        <div className="flex items-center gap-4">
-          {imagePreview && (
-            <div className="relative h-24 w-32">
-              <Image src={imagePreview} alt="" fill className="rounded-lg object-cover" />
-              <Button
-                type="button"
-                variant="destructive"
-                size="icon"
-                aria-label="Remover pré-visualização da imagem"
-                onClick={() => {
-                  setImageFile(null)
-                  setImagePreview("")
-                }}
-                className="absolute -right-2 -top-2 h-7 w-7 rounded-full shadow"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-          <div className="flex flex-col gap-1">
-            <input id="news-image" type="file" accept="image/*" onChange={handleImageChange} className="peer sr-only" />
-            <label htmlFor="news-image" className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 hover:bg-muted peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2">
-              <Upload className="h-4 w-4" />
-              <span className="text-sm">Escolher imagem</span>
-            </label>
-          </div>
-        </div>
-      </div>
+      <ImageUploadField
+        id="news-image"
+        label="imagem"
+        value={formData.imagem}
+        onChange={(file) => {
+          setImageFile(file)
+          if (!file) setFormData((current) => ({ ...current, imagem: "" }))
+        }}
+      />
+
+      {submitError && <Alert variant="destructive"><AlertDescription>{submitError}</AlertDescription></Alert>}
 
       <div className="flex items-center space-x-2">
         <Checkbox

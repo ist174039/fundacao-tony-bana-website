@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Facebook, Instagram, Twitter, Linkedin } from "lucide-react";
+import { Facebook, Instagram } from "lucide-react";
 import { FaTiktok } from "react-icons/fa";
 
 export default function Footer() {
@@ -80,23 +80,32 @@ export default function Footer() {
               <motion.a
                 whileHover={{ scale: 1.2, rotate: 5 }}
                 href="https://www.facebook.com/share/1JKRFpjske/?mibextid=wwXIfr"
+                aria-label="Facebook da Fundação Tony Bana"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
               >
-                <Facebook className="h-5 w-5" />
+                <Facebook className="h-5 w-5" aria-hidden="true" />
               </motion.a>
               <motion.a
                 whileHover={{ scale: 1.2, rotate: 5 }}
                 href="https://www.tiktok.com/@fundacao_tonybana"
+                aria-label="TikTok da Fundação Tony Bana"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
               >
-                <FaTiktok className="h-5 w-5" />
+                <FaTiktok className="h-5 w-5" aria-hidden="true" />
               </motion.a>
               <motion.a
                 whileHover={{ scale: 1.2, rotate: 5 }}
                 href="https://www.instagram.com/fundacao_tonybana?igsh=MXEzZHJqbGF0ZGtuOQ=="
+                aria-label="Instagram da Fundação Tony Bana"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
               >
-                <Instagram className="h-5 w-5" />
+                <Instagram className="h-5 w-5" aria-hidden="true" />
               </motion.a>
             </div>
           </motion.div>

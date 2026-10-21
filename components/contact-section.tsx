@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { Send, Mail, MapPin, Phone } from "lucide-react";
+import { SectionHeading } from "@/components/section-heading";
 
 export default function ContactSection() {
   const [formData, setFormData] = useState({
@@ -16,32 +18,21 @@ export default function ContactSection() {
     email: "",
     message: "",
   });
+  const [formStatus, setFormStatus] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement Firebase form submission
-    console.log("Form submitted:", formData);
+    setFormStatus("O formulário ainda não está ligado ao envio de mensagens. Contacte-nos pelo email ou telefone indicado ao lado.");
   };
 
   return (
-    <section id="contato" className="py-20 md:py-28">
+    <section id="contato" className="site-section">
       <div className="container">
-        <motion.div
-          initial={false}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mb-12 max-w-3xl"
-        >
-          <p className="mono-label mb-4 text-accent">04 / Fale connosco</p>
-          <h2 className="mb-4 font-montserrat text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
-            Vamos conversar sobre{" "}
-            <span className="text-primary">oportunidades.</span>
-          </h2>
-          <p className="max-w-2xl text-lg text-muted-foreground">
-            Tem alguma dúvida ou quer se juntar a nós? Envie-nos uma mensagem.
-          </p>
-        </motion.div>
+        <SectionHeading
+          eyebrow="04 / Fale connosco"
+          title={<>Vamos conversar sobre <span className="text-primary">oportunidades.</span></>}
+          description="Tem alguma dúvida ou quer juntar-se a nós? Fale connosco."
+        />
 
         <div className="grid lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
           <motion.div
@@ -126,13 +117,13 @@ export default function ContactSection() {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <Card className="rounded-2xl border border-border bg-card transition-colors hover:border-primary/40">
+            <Card className="site-card transition-colors hover:border-primary/40">
               <CardContent className="pt-6">
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-2">
-                    <label htmlFor="name" className="text-sm font-medium">
+                    <Label htmlFor="name">
                       Nome
-                    </label>
+                    </Label>
                     <Input
                       id="name"
                       value={formData.name}
@@ -144,9 +135,9 @@ export default function ContactSection() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label htmlFor="email" className="text-sm font-medium">
+                    <Label htmlFor="email">
                       Email
-                    </label>
+                    </Label>
                     <Input
                       id="email"
                       type="email"
@@ -159,9 +150,9 @@ export default function ContactSection() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label htmlFor="message" className="text-sm font-medium">
+                    <Label htmlFor="message">
                       Mensagem
-                    </label>
+                    </Label>
                     <Textarea
                       id="message"
                       rows={5}
@@ -173,8 +164,9 @@ export default function ContactSection() {
                       className="transition-all focus:scale-[1.02]"
                     />
                   </div>
+                  {formStatus && <p role="status" className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm text-muted-foreground">{formStatus}</p>}
                   <Button type="submit" size="lg" className="w-full group">
-                    Enviar Mensagem
+                    Contactar a Fundação
                     <Send className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Button>
                 </form>

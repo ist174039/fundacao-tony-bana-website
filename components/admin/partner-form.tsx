@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Upload, X } from "lucide-react"
-import Image from "next/image"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { ImageUploadField } from "@/components/admin/image-upload-field"
 import type { Parceiro } from "@/lib/firebase-firestore"
 
 interface PartnerFormProps {
@@ -25,26 +25,17 @@ export function PartnerForm({ partner, onSubmit, onCancel }: PartnerFormProps) {
     logo: partner?.logo || "",
   })
   const [logoFile, setLogoFile] = useState<File | null>(null)
-  const [logoPreview, setLogoPreview] = useState<string>(partner?.logo || "")
   const [loading, setLoading] = useState(false)
-
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setLogoFile(file)
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setLogoPreview(reader.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
+  const [submitError, setSubmitError] = useState("")
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSubmitError("")
     setLoading(true)
     try {
       await onSubmit(formData, logoFile || undefined)
+    } catch {
+      setSubmitError("Não foi possível guardar os dados do parceiro. Tente novamente.")
     } finally {
       setLoading(false)
     }
@@ -84,41 +75,18 @@ export function PartnerForm({ partner, onSubmit, onCancel }: PartnerFormProps) {
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="partner-logo">Logo</Label>
-        <div className="flex items-center gap-4">
-          {logoPreview && (
-            <div className="relative w-24 h-24">
-              <Image
-                src={logoPreview}
-                alt=""
-                fill
-                className="object-contain rounded-lg border p-2"
-              />
-              <Button
-                type="button"
-                variant="destructive"
-                size="icon"
-                aria-label="Remover pré-visualização do logótipo"
-                onClick={() => {
-                  setLogoFile(null)
-                  setLogoPreview("")
-                }}
-                className="absolute -right-2 -top-2 h-7 w-7 rounded-full shadow"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-          <div className="flex flex-col gap-1">
-            <input id="partner-logo" type="file" accept="image/*" onChange={handleLogoChange} className="peer sr-only" />
-            <label htmlFor="partner-logo" className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 hover:bg-muted peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2">
-              <Upload className="h-4 w-4" />
-              <span className="text-sm">Escolher logo</span>
-            </label>
-          </div>
-        </div>
-      </div>
+      <ImageUploadField
+        id="partner-logo"
+        label="logótipo"
+        value={formData.logo}
+        fit="contain"
+        onChange={(file) => {
+          setLogoFile(file)
+          if (!file) setFormData((current) => ({ ...current, logo: "" }))
+        }}
+      />
+
+      {submitError && <Alert variant="destructive"><AlertDescription>{submitError}</AlertDescription></Alert>}
 
       <div className="flex gap-2 justify-end">
         <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>

@@ -8,14 +8,13 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  CarrosselItem,
-  COLLECTIONS,
-  getCollection,
-} from "@/lib/firebase-firestore";
+import type { CarrosselItem } from "@/lib/firebase-firestore";
+import { useSiteContent } from "@/components/site-content-provider";
+import { SectionHeading } from "@/components/section-heading";
 
 const galleries = [
   { id: "desporto", title: "Desporto" },
@@ -25,25 +24,10 @@ const galleries = [
 ] as const;
 
 export default function CarouselSection() {
-  const [items, setItems] = useState<CarrosselItem[]>([]);
+  const { gallery: items } = useSiteContent();
   const [selected, setSelected] = useState<CarrosselItem | null>(null);
   const [category, setCategory] = useState<string>("todas");
   const [showAll, setShowAll] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-    getCollection<CarrosselItem>(COLLECTIONS.CARROSSEL)
-      .then((data) => {
-        if (!mounted) return;
-        setItems(
-          data.sort((a, b) => (b.data || "").localeCompare(a.data || "")),
-        );
-      })
-      .catch((error) => console.error(error));
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   const availableGalleries = useMemo(
     () =>
@@ -88,45 +72,22 @@ export default function CarouselSection() {
   return (
     <section
       id="carrossel"
-      className="border-y border-border bg-white/70 py-16 md:py-24"
+      className="site-section border-y border-border bg-card/70"
     >
       <div className="container">
-        <motion.div
-          initial={false}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.45 }}
-          className="mb-8 flex flex-col gap-5 md:mb-10 md:flex-row md:items-end md:justify-between"
-        >
-          <div className="max-w-2xl">
-            <p className="mb-3 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-              <Images className="h-4 w-4" aria-hidden="true" /> Vida da Fundação
-            </p>
-            <h2 className="font-montserrat text-3xl font-bold tracking-tight text-balance md:text-5xl">
-              Histórias em <span className="text-primary">imagens</span>
-            </h2>
-            <p className="mt-3 max-w-xl text-base leading-7 text-muted-foreground">
-              Momentos das atividades e das pessoas que fazem parte da nossa
-              comunidade.
-            </p>
-          </div>
-          {filteredItems.length > 6 && (
-            <Button
-              variant="outline"
-              className="w-fit shrink-0 rounded-full px-5"
-              onClick={() => setShowAll((value) => !value)}
-            >
-              {showAll
-                ? "Mostrar menos"
-                : `Ver todas (${filteredItems.length})`}
+        <SectionHeading
+          eyebrow="Vida da Fundação"
+          icon={<Images className="h-4 w-4" aria-hidden="true" />}
+          title={<>Histórias em <span className="text-primary">imagens</span></>}
+          description="Momentos das atividades e das pessoas que fazem parte da nossa comunidade."
+          aside={filteredItems.length > 6 ? (
+            <Button variant="outline" className="w-fit shrink-0 rounded-full px-5" onClick={() => setShowAll((value) => !value)}>
+              {showAll ? "Mostrar menos" : `Ver todas (${filteredItems.length})`}
             </Button>
-          )}
-        </motion.div>
+          ) : null}
+        />
 
-        <div
-          className="mb-7 flex flex-wrap gap-2"
-          aria-label="Filtrar galeria por tema"
-        >
+        <div className="mb-7 flex flex-wrap gap-2" role="group" aria-label="Filtrar galeria por tema">
           <button
             type="button"
             onClick={() => {
@@ -210,7 +171,7 @@ export default function CarouselSection() {
         open={!!selected}
         onOpenChange={(open) => !open && setSelected(null)}
       >
-        <DialogContent className="max-h-[94vh] max-w-6xl gap-0 overflow-hidden rounded-3xl border-0 bg-[#171614] p-0 text-white shadow-2xl sm:w-[calc(100%-3rem)]">
+        <DialogContent className="max-h-[94vh] max-w-6xl gap-0 overflow-hidden rounded-3xl border-0 bg-foreground p-0 text-white shadow-2xl sm:w-[calc(100%-3rem)]">
           <DialogHeader className="flex-row items-center justify-between gap-4 px-5 pb-4 pt-5 pr-14 text-left sm:px-7 sm:pt-6">
             <div className="min-w-0">
               <p className="mb-1 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-white/55">
@@ -222,6 +183,7 @@ export default function CarouselSection() {
               <DialogTitle className="truncate text-lg font-semibold text-white sm:text-xl">
                 {selected?.titulo || "Momento da Fundação"}
               </DialogTitle>
+              <DialogDescription className="sr-only">Fotografia ampliada da galeria. Use as setas para percorrer as imagens.</DialogDescription>
             </div>
             {selectedIndex >= 0 && (
               <span className="shrink-0 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 font-mono text-xs text-white/65">

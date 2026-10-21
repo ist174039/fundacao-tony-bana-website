@@ -8,20 +8,23 @@ import NewsSection from "@/components/news-section"
 import PartnersSection from "@/components/partners-section"
 import ContactSection from "@/components/contact-section"
 import Footer from "@/components/footer"
+import { SiteContentProvider } from "@/components/site-content-provider"
 
 export default function Home() {
   return (
-    <main className="min-h-screen">
-      <Header />
-      <HeroSection />
-      <MissionSection />
-      <PillarsSection />
-      <MembersSection />
-      <CarouselSection />
-      <NewsSection />
-      <PartnersSection />
-      <ContactSection />
-      <Footer />
-    </main>
+    <SiteContentProvider>
+      <main className="min-h-screen">
+        <Header />
+        <HeroSection />
+        <MissionSection />
+        <PillarsSection />
+        <MembersSection />
+        <CarouselSection />
+        <NewsSection />
+        <PartnersSection />
+        <ContactSection />
+        <Footer />
+      </main>
+    </SiteContentProvider>
   )
 }

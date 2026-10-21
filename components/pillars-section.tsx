@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { BookOpen, Heart, Sparkles, Trophy, Users } from "lucide-react";
+import { SectionHeading } from "@/components/section-heading";
 
 const pillars = [
   {
@@ -38,31 +39,22 @@ const pillars = [
 
 export default function PillarsSection() {
   return (
-    <section id="pilares" className="relative overflow-hidden py-20 md:py-28">
+    <section id="pilares" className="site-section relative overflow-hidden">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -right-28 top-12 h-80 w-80 rounded-full bg-accent/10 blur-3xl"
       />
       <div className="container relative">
-        <motion.div
-          initial={false}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="mb-10 flex flex-col gap-5 md:mb-12 md:flex-row md:items-end md:justify-between"
-        >
-          <div className="max-w-3xl">
-            <p className="mono-label mb-4 text-accent">02 / Como trabalhamos</p>
-            <h2 className="font-montserrat text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
-              Um trabalho com{" "}
-              <span className="text-primary">várias frentes.</span>
-            </h2>
-          </div>
-          <p className="max-w-sm text-base leading-7 text-muted-foreground md:text-right">
+        <SectionHeading
+          eyebrow="02 / Como trabalhamos"
+          title={<>Um trabalho com <span className="text-primary">várias frentes.</span></>}
+          aside={
+            <p className="max-w-sm text-base leading-7 text-muted-foreground md:text-right">
             Cada área abre um caminho. Juntas, criam mais oportunidades para
             todos.
-          </p>
-        </motion.div>
+            </p>
+          }
+        />
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6 lg:auto-rows-[minmax(220px,auto)]">
           {pillars.map((pillar, index) => {
@@ -76,7 +68,7 @@ export default function PillarsSection() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.45, delay: (index % 3) * 0.06 }}
                 whileHover={{ y: -5 }}
-                className={`group relative isolate flex min-h-[260px] flex-col overflow-hidden rounded-[1.75rem] border p-6 shadow-sm transition-[border-color,box-shadow] duration-300 md:p-8 ${featured ? "border-primary bg-primary text-primary-foreground shadow-primary/15 lg:col-span-3 lg:row-span-2" : "border-border/80 bg-card hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 lg:col-span-3"}`}
+                className={`group relative isolate flex min-h-[260px] flex-col overflow-hidden rounded-2xl border p-6 shadow-sm transition-[border-color,box-shadow] duration-300 md:p-8 ${featured ? "border-primary bg-primary text-primary-foreground shadow-primary/15 lg:col-span-3 lg:row-span-2" : "border-border/80 bg-card hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 lg:col-span-3"}`}
               >
                 {featured && (
                   <div

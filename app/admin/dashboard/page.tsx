@@ -32,8 +32,17 @@ import {
   Noticia,
   Membro,
   Parceiro,
+  CarrosselItem,
 } from "@/lib/firebase-firestore"
 import { onAuthChange, signOut } from "@/lib/firebase-auth"
+
+type PreviewItem =
+  | { kind: "noticia"; item: Noticia }
+  | { kind: "membro"; item: Membro }
+  | { kind: "parceiro"; item: Parceiro }
+
+const imagePath = (folder: string, file: File) =>
+  `${folder}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -46,13 +55,13 @@ export default function AdminDashboard() {
   const [members, setMembers] = useState<Membro[]>([])
   const [news, setNews] = useState<Noticia[]>([])
   const [partners, setPartners] = useState<Parceiro[]>([])
-  const [carrossel, setCarrossel] = useState<any[]>([])
+  const [carrossel, setCarrossel] = useState<CarrosselItem[]>([])
   const [editingMember, setEditingMember] = useState<Membro | null>(null)
   const [editingNews, setEditingNews] = useState<Noticia | null>(null)
   const [editingPartner, setEditingPartner] = useState<Parceiro | null>(null)
-  const [editingCarousel, setEditingCarousel] = useState<any | null>(null)
+  const [editingCarousel, setEditingCarousel] = useState<CarrosselItem | null>(null)
   const [openCarousel, setOpenCarousel] = useState(false)
-  const [previewItem, setPreviewItem] = useState<{ kind: "noticia" | "membro" | "parceiro"; item: any } | null>(null)
+  const [previewItem, setPreviewItem] = useState<PreviewItem | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<{ collectionName: string; id: string; label: string } | null>(null)
   const galleryGroups = [
@@ -68,7 +77,7 @@ export default function AdminDashboard() {
         getCollection<Membro>(COLLECTIONS.MEMBROS),
         getCollection<Noticia>(COLLECTIONS.NOTICIAS),
         getCollection<Parceiro>(COLLECTIONS.PARCEIROS),
-        getCollection(COLLECTIONS.CARROSSEL),
+        getCollection<CarrosselItem>(COLLECTIONS.CARROSSEL),
       ])
       setMembers(m)
       setNews(n)
@@ -76,7 +85,7 @@ export default function AdminDashboard() {
       setCarrossel(c)
       setLoadError(null)
     } catch (err) {
-      console.error("Error loading admin collections:", err)
+      console.error("Unable to load admin collections")
       setLoadError("Não foi possível carregar os conteúdos. Confirme o acesso e tente novamente.")
     }
   }, [])
@@ -107,7 +116,7 @@ export default function AdminDashboard() {
     void loadAll()
   }, [authReady, isAuthenticated, loadAll])
 
-  const handleAddMember = async (data: any, imageFile?: File) => {
+  const handleAddMember = async (data: Partial<Membro>, imageFile?: File) => {
     if (!isAuthenticated) {
       alert("Você precisa estar logado para adicionar membros. Redirecionando para login.")
       router.push("/admin/login")
@@ -116,18 +125,18 @@ export default function AdminDashboard() {
     try {
       let imageUrl = data.imagem || ""
       if (imageFile) {
-        const path = `membros/${Date.now()}-${imageFile.name}`
-        imageUrl = await uploadImage(imageFile, path)
+        imageUrl = await uploadImage(imageFile, imagePath("membros", imageFile))
       }
       await addDocument(COLLECTIONS.MEMBROS, { ...data, imagem: imageUrl })
       setOpenMember(false)
       await loadAll()
     } catch (err) {
-      console.error(err)
+      console.error("Unable to create member")
+      throw err
     }
   }
 
-  const handleUpdateMember = async (data: any, imageFile?: File) => {
+  const handleUpdateMember = async (data: Partial<Membro>, imageFile?: File) => {
     if (!editingMember) return
     if (!isAuthenticated) {
       alert("Você precisa estar logado para atualizar membros. Redirecionando para login.")
@@ -135,24 +144,21 @@ export default function AdminDashboard() {
       return
     }
     try {
-      console.log("Updating member", editingMember.id, data)
-      let imageUrl = data.imagem || editingMember.imagem || ""
+      let imageUrl = data.imagem ?? editingMember.imagem ?? ""
       if (imageFile) {
-        const path = `membros/${Date.now()}-${imageFile.name}`
-        imageUrl = await uploadImage(imageFile, path)
+        imageUrl = await uploadImage(imageFile, imagePath("membros", imageFile))
       }
       await updateDocument(COLLECTIONS.MEMBROS, editingMember.id, { ...data, imagem: imageUrl })
-      console.log("Member updated", editingMember.id)
-      if (typeof window !== "undefined") alert("Membro atualizado com sucesso")
       setEditingMember(null)
       setOpenMember(false)
       await loadAll()
     } catch (err) {
-      console.error(err)
+      console.error("Unable to update member")
+      throw err
     }
   }
 
-  const handleAddNews = async (data: any, imageFile?: File) => {
+  const handleAddNews = async (data: Partial<Noticia>, imageFile?: File) => {
     if (!isAuthenticated) {
       alert("Você precisa estar logado para adicionar notícias. Redirecionando para login.")
       router.push("/admin/login")
@@ -161,18 +167,18 @@ export default function AdminDashboard() {
     try {
       let imageUrl = data.imagem || ""
       if (imageFile) {
-        const path = `noticias/${Date.now()}-${imageFile.name}`
-        imageUrl = await uploadImage(imageFile, path)
+        imageUrl = await uploadImage(imageFile, imagePath("noticias", imageFile))
       }
       await addDocument(COLLECTIONS.NOTICIAS, { ...data, imagem: imageUrl })
       setOpenNews(false)
       await loadAll()
     } catch (err) {
-      console.error(err)
+      console.error("Unable to create news item")
+      throw err
     }
   }
 
-  const handleUpdateNews = async (data: any, imageFile?: File) => {
+  const handleUpdateNews = async (data: Partial<Noticia>, imageFile?: File) => {
     if (!editingNews) return
     if (!isAuthenticated) {
       alert("Você precisa estar logado para atualizar notícias. Redirecionando para login.")
@@ -180,24 +186,21 @@ export default function AdminDashboard() {
       return
     }
     try {
-      console.log("Updating news", editingNews.id, data)
-      let imageUrl = data.imagem || editingNews.imagem || ""
+      let imageUrl = data.imagem ?? editingNews.imagem ?? ""
       if (imageFile) {
-        const path = `noticias/${Date.now()}-${imageFile.name}`
-        imageUrl = await uploadImage(imageFile, path)
+        imageUrl = await uploadImage(imageFile, imagePath("noticias", imageFile))
       }
       await updateDocument(COLLECTIONS.NOTICIAS, editingNews.id, { ...data, imagem: imageUrl })
-      console.log("News updated", editingNews.id)
-      if (typeof window !== "undefined") alert("Notícia atualizada com sucesso")
       setEditingNews(null)
       setOpenNews(false)
       await loadAll()
     } catch (err) {
-      console.error(err)
+      console.error("Unable to update news item")
+      throw err
     }
   }
 
-  const handleAddPartner = async (data: any, logoFile?: File) => {
+  const handleAddPartner = async (data: Partial<Parceiro>, logoFile?: File) => {
     if (!isAuthenticated) {
       alert("Você precisa estar logado para adicionar parceiros. Redirecionando para login.")
       router.push("/admin/login")
@@ -206,18 +209,18 @@ export default function AdminDashboard() {
     try {
       let logoUrl = data.logo || ""
       if (logoFile) {
-        const path = `parceiros/${Date.now()}-${logoFile.name}`
-        logoUrl = await uploadImage(logoFile, path)
+        logoUrl = await uploadImage(logoFile, imagePath("parceiros", logoFile))
       }
       await addDocument(COLLECTIONS.PARCEIROS, { ...data, logo: logoUrl })
       setOpenPartner(false)
       await loadAll()
     } catch (err) {
-      console.error(err)
+      console.error("Unable to create partner")
+      throw err
     }
   }
 
-  const handleUpdatePartner = async (data: any, logoFile?: File) => {
+  const handleUpdatePartner = async (data: Partial<Parceiro>, logoFile?: File) => {
     if (!editingPartner) return
     if (!isAuthenticated) {
       alert("Você precisa estar logado para atualizar parceiros. Redirecionando para login.")
@@ -225,24 +228,21 @@ export default function AdminDashboard() {
       return
     }
     try {
-      console.log("Updating partner", editingPartner.id, data)
-      let logoUrl = data.logo || editingPartner.logo || ""
+      let logoUrl = data.logo ?? editingPartner.logo ?? ""
       if (logoFile) {
-        const path = `parceiros/${Date.now()}-${logoFile.name}`
-        logoUrl = await uploadImage(logoFile, path)
+        logoUrl = await uploadImage(logoFile, imagePath("parceiros", logoFile))
       }
       await updateDocument(COLLECTIONS.PARCEIROS, editingPartner.id, { ...data, logo: logoUrl })
-      console.log("Partner updated", editingPartner.id)
-      if (typeof window !== "undefined") alert("Parceiro atualizado com sucesso")
       setEditingPartner(null)
       setOpenPartner(false)
       await loadAll()
     } catch (err) {
-      console.error(err)
+      console.error("Unable to update partner")
+      throw err
     }
   }
 
-  const handleAddCarousel = async (data: any, imageFile?: File) => {
+  const handleAddCarousel = async (data: Partial<CarrosselItem>, imageFile?: File) => {
     if (!isAuthenticated) {
       alert("Você precisa estar logado para adicionar imagens ao carrossel. Redirecionando para login.")
       router.push("/admin/login")
@@ -251,18 +251,18 @@ export default function AdminDashboard() {
     try {
       let imageUrl = data.imagem || ""
       if (imageFile) {
-        const path = `carrossel/${Date.now()}-${imageFile.name}`
-        imageUrl = await uploadImage(imageFile, path)
+        imageUrl = await uploadImage(imageFile, imagePath("carrossel", imageFile))
       }
       await addDocument(COLLECTIONS.CARROSSEL, { ...data, imagem: imageUrl })
       setOpenCarousel(false)
       await loadAll()
     } catch (err) {
-      console.error(err)
+      console.error("Unable to create gallery item")
+      throw err
     }
   }
 
-  const handleUpdateCarousel = async (data: any, imageFile?: File) => {
+  const handleUpdateCarousel = async (data: Partial<CarrosselItem>, imageFile?: File) => {
     if (!editingCarousel) return
     if (!isAuthenticated) {
       alert("Você precisa estar logado para atualizar o carrossel. Redirecionando para login.")
@@ -270,17 +270,17 @@ export default function AdminDashboard() {
       return
     }
     try {
-      let imageUrl = data.imagem || editingCarousel.imagem || ""
+      let imageUrl = data.imagem ?? editingCarousel.imagem ?? ""
       if (imageFile) {
-        const path = `carrossel/${Date.now()}-${imageFile.name}`
-        imageUrl = await uploadImage(imageFile, path)
+        imageUrl = await uploadImage(imageFile, imagePath("carrossel", imageFile))
       }
       await updateDocument(COLLECTIONS.CARROSSEL, editingCarousel.id, { ...data, imagem: imageUrl })
       setEditingCarousel(null)
       setOpenCarousel(false)
       await loadAll()
     } catch (err) {
-      console.error(err)
+      console.error("Unable to update gallery item")
+      throw err
     }
   }
 
@@ -296,7 +296,7 @@ export default function AdminDashboard() {
       setPendingDelete(null)
       await loadAll()
     } catch (err) {
-      console.error("Error deleting:", err)
+      console.error("Unable to delete admin content")
       setLoadError("Não foi possível remover este conteúdo. Tente novamente.")
     }
   }
@@ -306,7 +306,7 @@ export default function AdminDashboard() {
       await signOut()
       router.replace("/admin/login")
     } catch (err) {
-      console.error("Error signing out:", err)
+      console.error("Unable to sign out admin")
       alert("Não foi possível terminar a sessão. Tente novamente.")
     }
   }
@@ -371,7 +371,7 @@ export default function AdminDashboard() {
 
           {/* Notícias Tab */}
           <TabsContent value="noticias">
-            <Card>
+            <Card className="site-card overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between">
               <div><CardTitle>Notícias</CardTitle><p className="mt-1 text-sm text-muted-foreground">Publicações e atualizações da fundação</p></div>
                 <Button onClick={() => {setEditingNews(null);setOpenNews(true)}}><Plus className="mr-2 h-4 w-4"/>Nova notícia</Button>
@@ -382,7 +382,7 @@ export default function AdminDashboard() {
                 ) : (
                   <div className="grid gap-3 md:grid-cols-2">
                     {news.map((n) => (
-                      <div key={n.id} className="flex min-w-0 gap-4 rounded-xl border border-border/70 bg-card p-3 shadow-sm shadow-black/10 transition hover:border-primary/40 hover:shadow-lg">
+                      <div key={n.id} className="site-card site-card-interactive flex min-w-0 gap-4 p-3">
                         {n.imagem ? <div className="relative h-24 w-28 shrink-0 overflow-hidden rounded-lg bg-muted"><Image src={n.imagem} alt="" fill className="object-cover"/></div> : <div className="flex h-24 w-28 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Newspaper className="h-7 w-7"/></div>}
                         <div className="flex min-w-0 flex-1 flex-col"><div className="font-semibold leading-snug">{n.titulo}</div><div className="mt-1 line-clamp-2 text-sm text-muted-foreground">{n.descricao}</div><div className="mt-auto pt-2 text-xs text-muted-foreground">{n.data}</div>
                         </div>
@@ -411,7 +411,7 @@ export default function AdminDashboard() {
 
           {/* Membros Tab */}
           <TabsContent value="membros">
-            <Card>
+            <Card className="site-card overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between">
               <div><CardTitle>Equipa</CardTitle><p className="mt-1 text-sm text-muted-foreground">Pessoas que fazem parte da fundação</p></div>
                 <Button onClick={() => {setEditingMember(null);setOpenMember(true)}}><Plus className="mr-2 h-4 w-4"/>Novo membro</Button>
@@ -422,7 +422,7 @@ export default function AdminDashboard() {
                 ) : (
                   <div className="grid gap-3 md:grid-cols-2">
                     {members.map((m) => (
-                      <div key={m.id} className="flex items-center gap-4 rounded-xl border border-border/70 bg-card p-3 shadow-sm shadow-black/10 transition hover:border-primary/40 hover:shadow-lg">
+                      <div key={m.id} className="site-card site-card-interactive flex items-center gap-4 p-3">
                         {m.imagem ? <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-muted"><Image src={m.imagem} alt={m.nome} fill className="object-cover"/></div> : <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"><Users className="h-6 w-6"/></div>}
                         <div className="min-w-0 flex-1"><div className="font-semibold">{m.nome}</div><div className="text-sm text-muted-foreground">{m.cargo}</div>
                         </div>
@@ -451,7 +451,7 @@ export default function AdminDashboard() {
 
           {/* Parceiros Tab */}
           <TabsContent value="parceiros">
-            <Card>
+            <Card className="site-card overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between">
               <div><CardTitle>Parceiros</CardTitle><p className="mt-1 text-sm text-muted-foreground">Organizações que apoiam o nosso trabalho</p></div>
                 <Button onClick={() => {setEditingPartner(null);setOpenPartner(true)}}><Plus className="mr-2 h-4 w-4"/>Novo parceiro</Button>
@@ -462,7 +462,7 @@ export default function AdminDashboard() {
                 ) : (
                   <div className="grid gap-3 md:grid-cols-2">
                     {partners.map((p) => (
-                      <div key={p.id} className="flex items-center gap-4 rounded-xl border border-border/70 bg-card p-3 shadow-sm shadow-black/10 transition hover:border-primary/40 hover:shadow-lg">
+                      <div key={p.id} className="site-card site-card-interactive flex items-center gap-4 p-3">
                         {p.logo ? <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-lg border border-border bg-muted p-2"><Image src={p.logo} alt={p.nome} fill className="object-contain p-2"/></div> : <div className="flex h-16 w-20 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Handshake className="h-6 w-6"/></div>}
                         <div className="min-w-0 flex-1"><div className="font-semibold">{p.nome}</div><div className="truncate text-sm text-muted-foreground">{p.website || p.descricao}</div>
                         </div>
@@ -491,7 +491,7 @@ export default function AdminDashboard() {
 
           {/* Carrossel Tab */}
           <TabsContent value="carrossel">
-            <Card>
+            <Card className="site-card overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between">
               <div><CardTitle>Galerias</CardTitle><p className="mt-1 text-sm text-muted-foreground">Imagens organizadas por área de atuação</p></div>
                 <Button onClick={() => {setEditingCarousel(null);setOpenCarousel(true)}}><Plus className="mr-2 h-4 w-4"/>Adicionar imagem</Button>
@@ -502,7 +502,7 @@ export default function AdminDashboard() {
                 ) : (
                   <div className="space-y-8">
                     {galleryGroups.filter((group) => group.items.length > 0).map((group) => <section key={group.id} className="space-y-3"><div className="flex items-center justify-between border-b pb-2"><div><h3 className="font-semibold">{group.label}</h3><p className="text-xs text-muted-foreground">{group.items.length} {group.items.length === 1 ? "imagem" : "imagens"}</p></div></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{group.items.map((c) => (
-                      <div key={c.id} className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm shadow-black/10 transition hover:border-primary/40 hover:shadow-lg">
+                      <div key={c.id} className="site-card site-card-interactive overflow-hidden">
                         <div className="relative aspect-[16/9] bg-muted">{c.imagem ? <Image src={c.imagem} alt={c.titulo || "Imagem da galeria"} fill className="object-cover"/> : <div className="flex h-full items-center justify-center text-muted-foreground"><Images className="h-8 w-8"/></div>}</div>
                         <div className="p-3"><div className="font-semibold">{c.titulo || "Imagem da galeria"}</div><div className="text-sm text-muted-foreground">{c.data}</div><div className="mt-3 flex gap-2">
                           {c.imagem && <Button variant="outline" size="sm" asChild><a href={c.imagem} target="_blank" rel="noreferrer"><Eye className="mr-1.5 h-4 w-4"/>Ver imagem</a></Button>}
@@ -528,6 +528,7 @@ export default function AdminDashboard() {
             <DialogDescription>Preencha os dados da pessoa e adicione a fotografia que será apresentada no site.</DialogDescription>
           </DialogHeader>
           <MemberForm
+            key={editingMember?.id ?? "new-member"}
             member={editingMember ?? undefined}
             onSubmit={editingMember ? handleUpdateMember : handleAddMember}
             onCancel={() => {
@@ -545,6 +546,7 @@ export default function AdminDashboard() {
             <DialogDescription>Preencha o título, a data e a descrição da publicação. A imagem e a ligação são opcionais.</DialogDescription>
           </DialogHeader>
           <NewsForm
+            key={editingNews?.id ?? "new-news"}
             news={editingNews ?? undefined}
             onSubmit={editingNews ? handleUpdateNews : handleAddNews}
             onCancel={() => {
@@ -562,6 +564,7 @@ export default function AdminDashboard() {
             <DialogDescription>Preencha a identificação do parceiro e os detalhes que pretende apresentar no site.</DialogDescription>
           </DialogHeader>
           <PartnerForm
+            key={editingPartner?.id ?? "new-partner"}
             partner={editingPartner ?? undefined}
             onSubmit={editingPartner ? handleUpdatePartner : handleAddPartner}
             onCancel={() => {
@@ -578,6 +581,7 @@ export default function AdminDashboard() {
             <DialogDescription>Escolha a galeria e adicione a imagem com a data e a descrição da atividade.</DialogDescription>
           </DialogHeader>
           <CarouselForm
+            key={editingCarousel?.id ?? "new-carousel"}
             item={editingCarousel ?? undefined}
             onSubmit={editingCarousel ? handleUpdateCarousel : handleAddCarousel}
             onCancel={() => {
@@ -590,14 +594,14 @@ export default function AdminDashboard() {
       <Dialog open={!!previewItem} onOpenChange={(open) => !open && setPreviewItem(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>{previewItem?.item?.titulo || previewItem?.item?.nome}</DialogTitle>
+            <DialogTitle>{previewItem && (previewItem.kind === "noticia" ? previewItem.item.titulo : previewItem.item.nome)}</DialogTitle>
             <DialogDescription>Pré-visualização dos detalhes deste conteúdo.</DialogDescription>
           </DialogHeader>
           {previewItem && <div className="space-y-4">
-            {previewItem.item.imagem || previewItem.item.logo ? <div className="relative aspect-[16/9] overflow-hidden rounded-xl bg-muted"><Image src={previewItem.item.imagem || previewItem.item.logo} alt={previewItem.item.titulo || previewItem.item.nome} fill className="object-contain" /></div> : null}
+            {(previewItem.kind === "parceiro" ? previewItem.item.logo : previewItem.item.imagem) ? <div className="relative aspect-[16/9] overflow-hidden rounded-xl bg-muted"><Image src={previewItem.kind === "parceiro" ? previewItem.item.logo : previewItem.item.imagem} alt={previewItem.kind === "noticia" ? previewItem.item.titulo : previewItem.item.nome} fill className="object-contain" /></div> : null}
             {previewItem.kind === "membro" && <p className="font-medium text-primary">{previewItem.item.cargo}</p>}
             {previewItem.kind === "parceiro" && <p className="font-medium text-primary">{previewItem.item.website}</p>}
-            {previewItem.item.data && <p className="text-sm text-muted-foreground">{previewItem.item.data}</p>}
+            {previewItem.kind === "noticia" && <p className="text-sm text-muted-foreground">{previewItem.item.data}</p>}
             {previewItem.item.descricao && <p className="whitespace-pre-wrap leading-relaxed text-muted-foreground">{previewItem.item.descricao}</p>}
             {previewItem.kind === "noticia" && previewItem.item.link && <Button asChild><a href={previewItem.item.link} target="_blank" rel="noreferrer">Abrir ligação da notícia</a></Button>}
             {previewItem.kind === "parceiro" && previewItem.item.website && <Button asChild><a href={previewItem.item.website} target="_blank" rel="noreferrer">Visitar website</a></Button>}
