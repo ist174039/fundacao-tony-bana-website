@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { onAuthChange, signOut } from "@/lib/firebase-auth"
 import { areaFetch } from "@/lib/area-client"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AppShell } from "@/components/workspace/app-shell"
+import { WorkspaceTemplate } from "@/components/workspace/app-shell"
 
 export default function AreaPage() {
   const router = useRouter()
@@ -44,7 +44,7 @@ export default function AreaPage() {
 
   const isAdmin = role === "admin"
   return <Tabs defaultValue="overview">
-    <AppShell product={isAdmin ? "Gestão da Fundação" : "Portal de sócio"} title={isAdmin ? "Sócios e finanças" : "A minha área"} subtitle={isAdmin ? "Sócios, acessos e movimento financeiro" : "Registo associativo, quotas e pagamentos"} email={email} onLogout={logout} headerLink={isAdmin ? { href: "/platform/admin", label: "Conteúdos do site" } : undefined} sidebar={role ? <div className="space-y-3"><div className="px-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground lg:pt-0">{isAdmin ? "Fundação" : "A minha conta"}</div><TabsList className="flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-lg bg-transparent p-0 lg:flex-col lg:items-stretch lg:overflow-visible">
+    <WorkspaceTemplate product={isAdmin ? "Gestão da Fundação" : "Portal de sócio"} title={isAdmin ? "Sócios e finanças" : "A minha área"} subtitle={isAdmin ? "Sócios, acessos e movimento financeiro" : "Registo associativo, quotas e pagamentos"} email={email} onLogout={logout} headerLink={isAdmin ? { href: "/platform/admin", label: "Conteúdos do site" } : undefined} sidebar={role ? <div className="space-y-3"><div className="px-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground lg:pt-0">{isAdmin ? "Fundação" : "A minha conta"}</div><TabsList className="flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-lg bg-transparent p-0 lg:flex-col lg:items-stretch lg:overflow-visible">
       <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="overview"><LayoutDashboard className="mr-2 h-4 w-4"/>Visão geral</TabsTrigger>
       <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="socios"><Users className="mr-2 h-4 w-4"/>{isAdmin ? "Sócios" : "Meu registo"}</TabsTrigger>
       <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="finance"><WalletCards className="mr-2 h-4 w-4"/>{isAdmin ? "Quotas e finanças" : "Quotas e pagamentos"}</TabsTrigger>
@@ -61,6 +61,6 @@ export default function AreaPage() {
         {role === "admin" && <TabsContent value="users"><UsersManager/></TabsContent>}
         <TabsContent value="profile"><ProfileSettings/></TabsContent>
       </div>}
-    </AppShell>
+    </WorkspaceTemplate>
   </Tabs>
 }

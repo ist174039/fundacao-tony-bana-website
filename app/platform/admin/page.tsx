@@ -7,17 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Users, Newspaper, Handshake, Eye, Pencil, Trash2, Plus, Images, LayoutDashboard } from "lucide-react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+import { Drawer as Dialog, DrawerContent as DialogContent, DrawerDescription as DialogDescription, DrawerHeader as DialogHeader, DrawerTitle as DialogTitle } from "@/components/workspace/drawer"
 import { CarouselForm } from "@/components/admin/carousel-form"
 import { MemberForm } from "@/components/admin/member-form"
 import { NewsForm } from "@/components/admin/news-form"
@@ -37,13 +27,15 @@ import {
 import { onAuthChange, signOut } from "@/lib/firebase-auth"
 import { areaFetch } from "@/lib/area-client"
 import { ContentOverviewChart } from "@/components/admin/content-overview-chart"
-import { AppShell } from "@/components/workspace/app-shell"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { WorkspaceTemplate } from "@/components/workspace/app-shell"
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { ListControls } from "@/components/workspace/list-controls"
 
 type PreviewItem =
   | { kind: "noticia"; item: Noticia }
   | { kind: "membro"; item: Membro }
   | { kind: "parceiro"; item: Parceiro }
+  | { kind: "carrossel"; item: CarrosselItem }
 
 const imagePath = (folder: string, file: File) =>
   `${folder}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`
@@ -68,18 +60,29 @@ export default function AdminDashboard() {
   const [previewItem, setPreviewItem] = useState<PreviewItem | null>(null)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [contentSearch, setContentSearch] = useState("")
+  const [sectionFilters, setSectionFilters] = useState({ noticias: "all", membros: "all", parceiros: "all", carrossel: "all" })
+  const [sectionPages, setSectionPages] = useState({ noticias: 1, membros: 1, parceiros: 1, carrossel: 1 })
   const [loadError, setLoadError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<{ collectionName: string; id: string; label: string } | null>(null)
   const searchTerm = contentSearch.trim().toLocaleLowerCase()
-  const visibleNews = news.filter((item) => `${item.titulo} ${item.descricao}`.toLocaleLowerCase().includes(searchTerm))
-  const visibleMembers = members.filter((item) => `${item.nome} ${item.cargo}`.toLocaleLowerCase().includes(searchTerm))
-  const visiblePartners = partners.filter((item) => `${item.nome} ${item.website} ${item.descricao}`.toLocaleLowerCase().includes(searchTerm))
-  const visibleCarousel = carrossel.filter((item) => `${item.titulo} ${item.categoria} ${item.data}`.toLocaleLowerCase().includes(searchTerm))
+  const searchedNews = news.filter((item) => `${item.titulo} ${item.descricao}`.toLocaleLowerCase().includes(searchTerm))
+  const searchedMembers = members.filter((item) => `${item.nome} ${item.cargo}`.toLocaleLowerCase().includes(searchTerm))
+  const searchedPartners = partners.filter((item) => `${item.nome} ${item.website} ${item.descricao}`.toLocaleLowerCase().includes(searchTerm))
+  const searchedCarousel = carrossel.filter((item) => `${item.titulo} ${item.categoria} ${item.data}`.toLocaleLowerCase().includes(searchTerm))
+  const visibleNews = searchedNews.filter((item) => sectionFilters.noticias === "all" || (sectionFilters.noticias === "featured" ? item.destaque : !item.destaque))
+  const visibleMembers = searchedMembers.filter((item) => sectionFilters.membros === "all" || item.cargo === sectionFilters.membros)
+  const visiblePartners = searchedPartners.filter((item) => sectionFilters.parceiros === "all" || (sectionFilters.parceiros === "website" ? Boolean(item.website) : !item.website))
+  const visibleCarousel = searchedCarousel.filter((item) => sectionFilters.carrossel === "all" || (sectionFilters.carrossel === "comunidade" ? !item.categoria || item.categoria === "comunidade" : item.categoria === sectionFilters.carrossel))
+  const pageItems = <T,>(items: T[], key: keyof typeof sectionPages) => items.slice((sectionPages[key] - 1) * 10, sectionPages[key] * 10)
+  const setFilter = (key: keyof typeof sectionFilters, value: string) => { setSectionFilters((filters) => ({ ...filters, [key]: value })); setSectionPages((pages) => ({ ...pages, [key]: 1 })) }
+  const setPage = (key: keyof typeof sectionPages, value: number) => setSectionPages((pages) => ({ ...pages, [key]: value }))
+  useEffect(() => { setSectionPages({ noticias: 1, membros: 1, parceiros: 1, carrossel: 1 }) }, [searchTerm])
+  const pagedCarousel = pageItems(visibleCarousel, "carrossel")
   const galleryGroups = [
-    { id: "desporto", label: "Desporto", items: visibleCarousel.filter((item) => item.categoria === "desporto") },
-    { id: "educacao", label: "Educação", items: visibleCarousel.filter((item) => item.categoria === "educacao") },
-    { id: "saude", label: "Saúde", items: visibleCarousel.filter((item) => item.categoria === "saude") },
-    { id: "comunidade", label: "Comunidade / geral", items: visibleCarousel.filter((item) => !item.categoria || item.categoria === "comunidade") },
+    { id: "desporto", label: "Desporto", items: pagedCarousel.filter((item) => item.categoria === "desporto") },
+    { id: "educacao", label: "Educação", items: pagedCarousel.filter((item) => item.categoria === "educacao") },
+    { id: "saude", label: "Saúde", items: pagedCarousel.filter((item) => item.categoria === "saude") },
+    { id: "comunidade", label: "Comunidade / geral", items: pagedCarousel.filter((item) => !item.categoria || item.categoria === "comunidade") },
   ]
 
   const showPreview = (item: PreviewItem) => { setPreviewItem(item); setPreviewOpen(true) }
@@ -352,7 +355,7 @@ export default function AdminDashboard() {
 
   return (
     <Tabs defaultValue="overview" className="min-h-screen">
-      <AppShell product="Administração do site" title="Conteúdos do site" email={userEmail ?? "Sessão iniciada"} onLogout={handleLogout} headerLink={{ href: "/platform/area", label: "Gestão de sócios" }} search={{ value: contentSearch, onChange: setContentSearch, placeholder: "Pesquisar conteúdo" }} sidebar={
+      <WorkspaceTemplate product="Administração do site" title="Conteúdos do site" email={userEmail ?? "Sessão iniciada"} onLogout={handleLogout} headerLink={{ href: "/platform/area", label: "Gestão de sócios" }} search={{ value: contentSearch, onChange: (value) => { setContentSearch(value); setSectionPages({ noticias: 1, membros: 1, parceiros: 1, carrossel: 1 }) }, placeholder: "Pesquisar conteúdo" }} sidebar={
         <div className="space-y-3">
           <div className="px-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground lg:pt-0">Conteúdo público</div>
           <TabsList className="flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-lg bg-transparent p-0 lg:flex-col lg:items-stretch lg:overflow-visible">
@@ -386,11 +389,12 @@ export default function AdminDashboard() {
                 <Button onClick={() => {setEditingNews(null);setOpenNews(true)}}><Plus className="mr-2 h-4 w-4"/>Nova notícia</Button>
               </CardHeader>
               <CardContent className="admin-list-content">
+                <ListControls search={contentSearch} onSearchChange={(value) => { setContentSearch(value); setPage("noticias", 1) }} placeholder="Pesquisar notícia" filter={sectionFilters.noticias} onFilterChange={(value) => setFilter("noticias", value)} filterOptions={[{ value: "all", label: "Todas as notícias" }, { value: "featured", label: "Em destaque" }, { value: "standard", label: "Sem destaque" }]} page={sectionPages.noticias} pageCount={Math.max(1, Math.ceil(visibleNews.length / 10))} total={visibleNews.length} onPageChange={(value) => setPage("noticias", value)}/>
                 {visibleNews.length === 0 ? (
                   <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">{searchTerm ? "Nenhuma notícia corresponde à pesquisa." : news.length === 0 ? "Nenhuma notícia cadastrada ainda." : "Não há notícias para mostrar."}</div>
                 ) : (
                   <div className="grid gap-3 md:grid-cols-2">
-                    {visibleNews.map((n) => (
+                    {pageItems(visibleNews, "noticias").map((n) => (
                       <div key={n.id} className="admin-content-card site-card site-card-interactive flex min-w-0 gap-4 p-3.5">
                         {n.imagem ? <div className="relative h-24 w-28 shrink-0 overflow-hidden rounded-lg bg-muted"><Image src={n.imagem} alt="" fill className="object-cover"/></div> : <div className="flex h-24 w-28 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Newspaper className="h-7 w-7"/></div>}
                         <div className="flex min-w-0 flex-1 flex-col"><div className="font-semibold leading-snug">{n.titulo}</div><div className="mt-1 line-clamp-2 text-sm text-muted-foreground">{n.descricao}</div><div className="mt-auto pt-2 text-xs text-muted-foreground">{n.data}</div>
@@ -426,11 +430,12 @@ export default function AdminDashboard() {
                 <Button onClick={() => {setEditingMember(null);setOpenMember(true)}}><Plus className="mr-2 h-4 w-4"/>Novo membro</Button>
               </CardHeader>
               <CardContent className="admin-list-content">
+                <ListControls search={contentSearch} onSearchChange={(value) => { setContentSearch(value); setPage("membros", 1) }} placeholder="Pesquisar pessoa da equipa" filter={sectionFilters.membros} onFilterChange={(value) => setFilter("membros", value)} filterOptions={[{ value: "all", label: "Todas as funções" }, ...Array.from(new Set(members.map((member) => member.cargo).filter(Boolean))).map((cargo) => ({ value: cargo, label: cargo }))]} page={sectionPages.membros} pageCount={Math.max(1, Math.ceil(visibleMembers.length / 10))} total={visibleMembers.length} onPageChange={(value) => setPage("membros", value)}/>
                 {visibleMembers.length === 0 ? (
                   <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">{searchTerm ? "Nenhum membro corresponde à pesquisa." : members.length === 0 ? "Nenhum membro cadastrado ainda." : "Não há membros para mostrar."}</div>
                 ) : (
                   <div className="grid gap-3 md:grid-cols-2">
-                    {visibleMembers.map((m) => (
+                    {pageItems(visibleMembers, "membros").map((m) => (
                       <div key={m.id} className="admin-content-card site-card site-card-interactive flex items-center gap-4 p-3.5">
                         {m.imagem ? <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-muted"><Image src={m.imagem} alt={m.nome} fill className="object-cover"/></div> : <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"><Users className="h-6 w-6"/></div>}
                         <div className="min-w-0 flex-1"><div className="font-semibold">{m.nome}</div><div className="text-sm text-muted-foreground">{m.cargo}</div>
@@ -466,11 +471,12 @@ export default function AdminDashboard() {
                 <Button onClick={() => {setEditingPartner(null);setOpenPartner(true)}}><Plus className="mr-2 h-4 w-4"/>Novo parceiro</Button>
               </CardHeader>
               <CardContent className="admin-list-content">
+                <ListControls search={contentSearch} onSearchChange={(value) => { setContentSearch(value); setPage("parceiros", 1) }} placeholder="Pesquisar parceiro" filter={sectionFilters.parceiros} onFilterChange={(value) => setFilter("parceiros", value)} filterOptions={[{ value: "all", label: "Todos os parceiros" }, { value: "website", label: "Com website" }, { value: "no-website", label: "Sem website" }]} page={sectionPages.parceiros} pageCount={Math.max(1, Math.ceil(visiblePartners.length / 10))} total={visiblePartners.length} onPageChange={(value) => setPage("parceiros", value)}/>
                 {visiblePartners.length === 0 ? (
                   <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">{searchTerm ? "Nenhum parceiro corresponde à pesquisa." : partners.length === 0 ? "Nenhum parceiro cadastrado ainda." : "Não há parceiros para mostrar."}</div>
                 ) : (
                   <div className="grid gap-3 md:grid-cols-2">
-                    {visiblePartners.map((p) => (
+                    {pageItems(visiblePartners, "parceiros").map((p) => (
                       <div key={p.id} className="admin-content-card site-card site-card-interactive flex items-center gap-4 p-3.5">
                         {p.logo ? <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-lg border border-border bg-muted p-2"><Image src={p.logo} alt={p.nome} fill className="object-contain p-2"/></div> : <div className="flex h-16 w-20 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Handshake className="h-6 w-6"/></div>}
                         <div className="min-w-0 flex-1"><div className="font-semibold">{p.nome}</div><div className="truncate text-sm text-muted-foreground">{p.website || p.descricao}</div>
@@ -506,6 +512,7 @@ export default function AdminDashboard() {
                 <Button onClick={() => {setEditingCarousel(null);setOpenCarousel(true)}}><Plus className="mr-2 h-4 w-4"/>Adicionar imagem</Button>
               </CardHeader>
               <CardContent className="admin-list-content">
+                <ListControls search={contentSearch} onSearchChange={(value) => { setContentSearch(value); setPage("carrossel", 1) }} placeholder="Pesquisar imagens da galeria" filter={sectionFilters.carrossel} onFilterChange={(value) => setFilter("carrossel", value)} filterOptions={[{ value: "all", label: "Todas as galerias" }, { value: "desporto", label: "Desporto" }, { value: "educacao", label: "Educação" }, { value: "saude", label: "Saúde" }, { value: "comunidade", label: "Comunidade / geral" }]} page={sectionPages.carrossel} pageCount={Math.max(1, Math.ceil(visibleCarousel.length / 10))} total={visibleCarousel.length} onPageChange={(value) => setPage("carrossel", value)}/>
                 {visibleCarousel.length === 0 ? (
                   <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">{searchTerm ? "Nenhuma imagem corresponde à pesquisa." : "Nenhuma imagem na galeria ainda."}</div>
                 ) : (
@@ -514,7 +521,7 @@ export default function AdminDashboard() {
                       <div key={c.id} className="admin-content-card site-card site-card-interactive overflow-hidden">
                         <div className="relative aspect-[16/9] bg-muted">{c.imagem ? <Image src={c.imagem} alt={c.titulo || "Imagem da galeria"} fill className="object-cover"/> : <div className="flex h-full items-center justify-center text-muted-foreground"><Images className="h-8 w-8"/></div>}</div>
                         <div className="p-3"><div className="font-semibold">{c.titulo || "Imagem da galeria"}</div><div className="text-sm text-muted-foreground">{c.data}</div><div className="mt-3 flex gap-2">
-                          {c.imagem && <Button variant="outline" size="sm" asChild><a href={c.imagem} target="_blank" rel="noreferrer"><Eye className="mr-1.5 h-4 w-4"/>Ver imagem</a></Button>}
+                          <Button variant="outline" size="sm" onClick={() => showPreview({ kind: "carrossel", item: c })}><Eye className="mr-1.5 h-4 w-4"/>Detalhes</Button>
                           <Button variant="outline" size="sm" onClick={() => {setEditingCarousel(c);setOpenCarousel(true)}}><Pencil className="mr-1.5 h-4 w-4"/>Editar</Button>
                           <Button variant="ghost" size="sm" aria-label={`Remover ${c.titulo || "imagem"} da galeria`} className="text-destructive hover:text-destructive" onClick={() => setPendingDelete({ collectionName: COLLECTIONS.CARROSSEL, id: c.id, label: c.titulo || "imagem da galeria" })}><Trash2 className="h-4 w-4"/></Button>
                         </div>
@@ -528,11 +535,11 @@ export default function AdminDashboard() {
           </TabsContent>
         </div>
       </div>
-      </AppShell>
+      </WorkspaceTemplate>
 
       {/* Dialogs for adding items */}
       <Dialog open={openMember} onOpenChange={setOpenMember}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+        <DialogContent className="overflow-y-auto sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{editingMember ? "Editar membro" : "Adicionar membro"}</DialogTitle>
             <DialogDescription>Preencha os dados da pessoa e adicione a fotografia que será apresentada no site.</DialogDescription>
@@ -550,7 +557,7 @@ export default function AdminDashboard() {
       </Dialog>
 
       <Dialog open={openNews} onOpenChange={setOpenNews}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+        <DialogContent className="overflow-y-auto sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{editingNews ? "Editar notícia" : "Adicionar notícia"}</DialogTitle>
             <DialogDescription>Preencha o título, a data e a descrição da publicação. A imagem e a ligação são opcionais.</DialogDescription>
@@ -568,7 +575,7 @@ export default function AdminDashboard() {
       </Dialog>
 
       <Dialog open={openPartner} onOpenChange={setOpenPartner}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+        <DialogContent className="overflow-y-auto sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{editingPartner ? "Editar parceiro" : "Adicionar parceiro"}</DialogTitle>
             <DialogDescription>Preencha a identificação do parceiro e os detalhes que pretende apresentar no site.</DialogDescription>
@@ -585,7 +592,7 @@ export default function AdminDashboard() {
         </DialogContent>
       </Dialog>
       <Dialog open={openCarousel} onOpenChange={setOpenCarousel}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+        <DialogContent className="overflow-y-auto sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{editingCarousel ? "Editar imagem da galeria" : "Adicionar imagem à galeria"}</DialogTitle>
             <DialogDescription>Escolha a galeria e adicione a imagem com a data e a descrição da atividade.</DialogDescription>
@@ -604,36 +611,26 @@ export default function AdminDashboard() {
       <Sheet open={previewOpen} onOpenChange={setPreviewOpen}>
         <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-xl">
           <SheetHeader className="pr-8">
-            <SheetTitle>{previewItem && (previewItem.kind === "noticia" ? previewItem.item.titulo : previewItem.item.nome)}</SheetTitle>
+            <SheetTitle>{previewItem && (previewItem.kind === "noticia" || previewItem.kind === "carrossel" ? previewItem.item.titulo || "Detalhes da galeria" : previewItem.item.nome)}</SheetTitle>
             <SheetDescription>Detalhes do conteúdo selecionado. Fecha o painel para continuar exatamente na mesma lista.</SheetDescription>
           </SheetHeader>
           {previewItem && <div className="space-y-4">
-            {(previewItem.kind === "parceiro" ? previewItem.item.logo : previewItem.item.imagem) ? <div className="relative aspect-[16/9] overflow-hidden rounded-xl bg-muted"><Image src={previewItem.kind === "parceiro" ? previewItem.item.logo : previewItem.item.imagem} alt={previewItem.kind === "noticia" ? previewItem.item.titulo : previewItem.item.nome} fill className="object-contain" /></div> : null}
+            {(previewItem.kind === "parceiro" ? previewItem.item.logo : previewItem.item.imagem) ? <div className="relative aspect-[16/9] overflow-hidden rounded-xl bg-muted"><Image src={previewItem.kind === "parceiro" ? previewItem.item.logo! : previewItem.item.imagem!} alt={previewItem.kind === "noticia" || previewItem.kind === "carrossel" ? previewItem.item.titulo || "Imagem da galeria" : previewItem.item.nome} fill className="object-contain" /></div> : null}
             {previewItem.kind === "membro" && <p className="font-medium text-primary">{previewItem.item.cargo}</p>}
             {previewItem.kind === "parceiro" && <p className="font-medium text-primary">{previewItem.item.website}</p>}
-            {previewItem.kind === "noticia" && <p className="text-sm text-muted-foreground">{previewItem.item.data}</p>}
+            {(previewItem.kind === "noticia" || previewItem.kind === "carrossel") && <p className="text-sm text-muted-foreground">{previewItem.item.data}</p>}
             {previewItem.item.descricao && <p className="whitespace-pre-wrap leading-relaxed text-muted-foreground">{previewItem.item.descricao}</p>}
             {previewItem.kind === "noticia" && previewItem.item.link && <Button asChild><a href={previewItem.item.link} target="_blank" rel="noreferrer">Abrir ligação da notícia</a></Button>}
             {previewItem.kind === "parceiro" && previewItem.item.website && <Button asChild><a href={previewItem.item.website} target="_blank" rel="noreferrer">Visitar website</a></Button>}
           </div>}
         </SheetContent>
       </Sheet>
-      <AlertDialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remover conteúdo?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação remove “{pendingDelete?.label}” do site e não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => void handleDelete()} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Remover
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Sheet open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-lg">
+          <SheetHeader><SheetTitle>Remover conteúdo?</SheetTitle><SheetDescription>Esta ação remove “{pendingDelete?.label}” do site e não pode ser desfeita.</SheetDescription></SheetHeader>
+          <SheetFooter className="mt-6"><Button variant="outline" onClick={() => setPendingDelete(null)}>Cancelar</Button><Button onClick={() => void handleDelete()} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Remover</Button></SheetFooter>
+        </SheetContent>
+      </Sheet>
     </Tabs>
   )
 }

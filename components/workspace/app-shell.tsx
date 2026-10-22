@@ -19,7 +19,7 @@ interface AppShellProps {
   search?: { value: string; onChange: (value: string) => void; placeholder: string }
 }
 
-export function AppShell({ product, title, email, onLogout, sidebar, children, subtitle, headerLink, search }: AppShellProps) {
+export function WorkspaceTemplate({ product, title, email, onLogout, sidebar, children, subtitle, headerLink, search }: AppShellProps) {
   return <div className="flex min-h-screen flex-col bg-background text-foreground">
     <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-3 border-b bg-card px-4 sm:px-6">
       <div className="flex min-w-0 items-center gap-3">
@@ -47,3 +47,5 @@ export function AppShell({ product, title, email, onLogout, sidebar, children, s
     </div>
   </div>
 }
+
+export const AppShell = WorkspaceTemplate
