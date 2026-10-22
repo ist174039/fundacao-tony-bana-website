@@ -14,6 +14,9 @@ export async function areaFetch<T>(path: string, init: RequestInit = {}): Promis
     },
   })
   const data = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(data.error || "Não foi possível concluir a operação.")
+  if (!response.ok) {
+    const error = typeof data.error === "string" ? data.error : "Não foi possível concluir a operação."
+    throw new Error(typeof data.code === "string" ? `${error} (${data.code})` : error)
+  }
   return data as T
 }

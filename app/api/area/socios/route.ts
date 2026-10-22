@@ -19,8 +19,10 @@ export async function GET(request: Request) {
     }
     const snapshot = await collection.orderBy("nome").limit(1000).get()
     return NextResponse.json({ socios: snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) })
-  } catch {
-    return NextResponse.json({ error: "Não foi possível carregar os sócios." }, { status: 500 })
+  } catch (error) {
+    const code = typeof error === "object" && error && "code" in error ? String(error.code) : "unknown"
+    console.error("[area-socios] Firestore read failed", { code })
+    return NextResponse.json({ error: "Não foi possível carregar os sócios.", code }, { status: 500 })
   }
 }
 
