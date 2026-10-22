@@ -1,21 +1,19 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Image from "next/image"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ClipboardList, LayoutDashboard, LogOut, ShieldCheck, Users, WalletCards, UserRoundCog } from "lucide-react"
+import { ClipboardList, ShieldCheck, Users, WalletCards, UserRoundCog } from "lucide-react"
 import { SociosManager } from "@/components/area/socios-manager"
 import { UsersManager } from "@/components/area/users-manager"
 import { FinanceManager } from "@/components/area/finance-manager"
 import { IntentionsManager } from "@/components/area/intentions-manager"
 import { ProfileSettings } from "@/components/area/profile-settings"
 import { MembershipLink } from "@/components/area/membership-link"
-import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { onAuthChange, signOut } from "@/lib/firebase-auth"
 import { areaFetch } from "@/lib/area-client"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AppShell } from "@/components/workspace/app-shell"
 
 export default function AreaPage() {
   const router = useRouter()
@@ -43,32 +41,23 @@ export default function AreaPage() {
 
   if (!ready) return <main className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">A verificar a sessão…</main>
 
-  return <div className="min-h-screen bg-background text-foreground">
-    <header className="sticky top-0 z-20 border-b border-border/70 bg-background/90 backdrop-blur">
-      <div className="container flex h-16 items-center justify-between gap-4">
-        <div className="flex items-center gap-3"><Image src="/logo.jpg" alt="Fundação Tony Bana" width={40} height={40} className="rounded-full"/><div><h1 className="font-semibold">Área de trabalho</h1><p className="hidden text-xs text-muted-foreground sm:block">Fundação Tony Bana</p></div></div>
-        <div className="flex items-center gap-3"><span className="hidden text-sm text-muted-foreground md:inline">{email}</span>{role === "admin" && <Button asChild variant="outline" size="sm"><Link href="/platform/admin"><LayoutDashboard className="mr-2 h-4 w-4"/>Conteúdos do site</Link></Button>}<Button variant="ghost" size="sm" onClick={() => void logout()} aria-label="Terminar sessão"><LogOut className="h-4 w-4"/><span className="ml-2 hidden sm:inline">Sair</span></Button></div>
-      </div>
-    </header>
-    <main className="container max-w-7xl py-8 md:py-10">
-      <div className="mb-7 max-w-2xl"><div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary"><ShieldCheck className="h-4 w-4"/>Gestão da Fundação</div><h2 className="text-3xl font-bold tracking-tight">{role === "socio" ? "Área do sócio" : "Sócios e finanças"}</h2><p className="mt-2 text-sm text-muted-foreground">{role === "socio" ? "Consulta o teu registo associativo, quotas e recebimentos." : "Um espaço de trabalho para acompanhar sócios, acessos, quotas e doações."}</p></div>
-      {accessError ? <><Alert variant="destructive"><AlertDescription>{accessError}</AlertDescription></Alert><MembershipLink/></> :
-      <Tabs defaultValue="socios" className="space-y-5">
-        <TabsList className={`grid h-auto w-full gap-1 rounded-xl border border-border/70 bg-card p-1.5 ${role === "admin" ? "grid-cols-2 sm:grid-cols-5" : "grid-cols-2 sm:grid-cols-3"}`}>
-          <TabsTrigger value="socios"><Users className="mr-2 h-4 w-4"/>{role === "socio" ? "Meu registo" : "Sócios"}</TabsTrigger>
-          <TabsTrigger value="finance"><WalletCards className="mr-2 h-4 w-4"/>{role === "socio" ? "Quotas e pagamentos" : "Quotas e finanças"}</TabsTrigger>
-          {role === "admin" && <TabsTrigger value="intentions"><ClipboardList className="mr-2 h-4 w-4"/>Pedidos de adesão</TabsTrigger>}
-          {role === "admin" && <TabsTrigger value="users"><ShieldCheck className="mr-2 h-4 w-4"/>Utilizadores</TabsTrigger>}
-          <TabsTrigger value="profile"><UserRoundCog className="mr-2 h-4 w-4"/>O meu perfil</TabsTrigger>
-        </TabsList>
+  const isAdmin = role === "admin"
+  return <Tabs defaultValue="socios">
+    <AppShell product={isAdmin ? "Gestão da Fundação" : "Portal de sócio"} title={isAdmin ? "Sócios e finanças" : "A minha área"} subtitle={isAdmin ? "Sócios, acessos e movimento financeiro" : "Registo associativo, quotas e pagamentos"} email={email} onLogout={logout} headerLink={isAdmin ? { href: "/platform/admin", label: "Conteúdos do site" } : undefined} sidebar={role ? <div className="space-y-3"><div className="px-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground lg:pt-0">{isAdmin ? "Fundação" : "A minha conta"}</div><TabsList className="flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-lg bg-transparent p-0 lg:flex-col lg:items-stretch lg:overflow-visible">
+      <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="socios"><Users className="mr-2 h-4 w-4"/>{isAdmin ? "Sócios" : "Meu registo"}</TabsTrigger>
+      <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="finance"><WalletCards className="mr-2 h-4 w-4"/>{isAdmin ? "Quotas e finanças" : "Quotas e pagamentos"}</TabsTrigger>
+      {isAdmin && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="intentions"><ClipboardList className="mr-2 h-4 w-4"/>Contactos e pedidos</TabsTrigger>}
+      {isAdmin && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="users"><ShieldCheck className="mr-2 h-4 w-4"/>Utilizadores</TabsTrigger>}
+      <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="profile"><UserRoundCog className="mr-2 h-4 w-4"/>O meu perfil</TabsTrigger>
+    </TabsList></div> : <div className="rounded-md border bg-background p-3 text-xs text-muted-foreground">Inicia sessão para consultar o teu espaço de trabalho.</div>}>
+      <div className="mb-6 flex items-start gap-3 border-b border-border/70 pb-5"><div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><ShieldCheck className="h-5 w-5"/></div><div><div className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">{isAdmin ? "Gestão da Fundação" : "Espaço pessoal"}</div><h1 className="mt-1 text-2xl font-semibold tracking-tight">{isAdmin ? "Sócios e finanças" : "Acompanha as tuas quotas"}</h1><p className="mt-1 text-sm text-muted-foreground">{isAdmin ? "Acompanha sócios, acessos, quotas e doações." : "Consulta o teu registo, pagamentos e situação das quotas."}</p></div></div>
+      {accessError ? <><Alert variant="destructive"><AlertDescription>{accessError}</AlertDescription></Alert><MembershipLink/></> : <div className="space-y-5">
         <TabsContent value="socios"><SociosManager readOnly={role === "socio"}/></TabsContent>
         <TabsContent value="finance"><FinanceManager readOnly={role === "socio"}/></TabsContent>
         {role === "admin" && <TabsContent value="intentions"><IntentionsManager/></TabsContent>}
         {role === "admin" && <TabsContent value="users"><UsersManager/></TabsContent>}
         <TabsContent value="profile"><ProfileSettings/></TabsContent>
-      </Tabs>
-      }
-      <p className="mt-6 text-xs text-muted-foreground">Acesso administrativo autorizado apenas a contas designadas pela Fundação.</p>
-    </main>
-  </div>
+      </div>}
+    </AppShell>
+  </Tabs>
 }

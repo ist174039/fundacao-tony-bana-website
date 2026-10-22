@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { LogOut, Users, Newspaper, Briefcase, Handshake, Eye, Pencil, Trash2, Plus, Images, LayoutDashboard } from "lucide-react"
+import { Users, Newspaper, Handshake, Eye, Pencil, Trash2, Plus, Images, LayoutDashboard } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
   AlertDialog,
@@ -37,6 +37,8 @@ import {
 import { onAuthChange, signOut } from "@/lib/firebase-auth"
 import { areaFetch } from "@/lib/area-client"
 import { ContentOverviewChart } from "@/components/admin/content-overview-chart"
+import { AppShell } from "@/components/workspace/app-shell"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 
 type PreviewItem =
   | { kind: "noticia"; item: Noticia }
@@ -64,14 +66,23 @@ export default function AdminDashboard() {
   const [editingCarousel, setEditingCarousel] = useState<CarrosselItem | null>(null)
   const [openCarousel, setOpenCarousel] = useState(false)
   const [previewItem, setPreviewItem] = useState<PreviewItem | null>(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [contentSearch, setContentSearch] = useState("")
   const [loadError, setLoadError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<{ collectionName: string; id: string; label: string } | null>(null)
+  const searchTerm = contentSearch.trim().toLocaleLowerCase()
+  const visibleNews = news.filter((item) => `${item.titulo} ${item.descricao}`.toLocaleLowerCase().includes(searchTerm))
+  const visibleMembers = members.filter((item) => `${item.nome} ${item.cargo}`.toLocaleLowerCase().includes(searchTerm))
+  const visiblePartners = partners.filter((item) => `${item.nome} ${item.website} ${item.descricao}`.toLocaleLowerCase().includes(searchTerm))
+  const visibleCarousel = carrossel.filter((item) => `${item.titulo} ${item.categoria} ${item.data}`.toLocaleLowerCase().includes(searchTerm))
   const galleryGroups = [
-    { id: "desporto", label: "Desporto", items: carrossel.filter((item) => item.categoria === "desporto") },
-    { id: "educacao", label: "Educação", items: carrossel.filter((item) => item.categoria === "educacao") },
-    { id: "saude", label: "Saúde", items: carrossel.filter((item) => item.categoria === "saude") },
-    { id: "comunidade", label: "Comunidade / geral", items: carrossel.filter((item) => !item.categoria || item.categoria === "comunidade") },
+    { id: "desporto", label: "Desporto", items: visibleCarousel.filter((item) => item.categoria === "desporto") },
+    { id: "educacao", label: "Educação", items: visibleCarousel.filter((item) => item.categoria === "educacao") },
+    { id: "saude", label: "Saúde", items: visibleCarousel.filter((item) => item.categoria === "saude") },
+    { id: "comunidade", label: "Comunidade / geral", items: visibleCarousel.filter((item) => !item.categoria || item.categoria === "comunidade") },
   ]
+
+  const showPreview = (item: PreviewItem) => { setPreviewItem(item); setPreviewOpen(true) }
 
   const loadAll = useCallback(async () => {
     try {
@@ -340,63 +351,30 @@ export default function AdminDashboard() {
   if (!isAuthenticated) return null
 
   return (
-    <div className="admin-panel min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <header className="admin-topbar sticky top-0 z-20 border-b border-border/70 bg-background/90 backdrop-blur-xl">
-        <div className="container flex h-[4.5rem] items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="admin-brand-mark flex h-11 w-11 items-center justify-center rounded-2xl border border-border/60 bg-card p-1 shadow-sm">
-              <Image src="/logo.jpg" alt="Fundação Tony Bana" width={40} height={40} className="rounded-xl object-contain" />
-            </div>
-            <div><p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-primary">Fundação Tony Bana</p><h1 className="mt-0.5 font-montserrat text-base font-semibold tracking-tight sm:text-lg">Painel de gestão</h1></div>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="hidden max-w-56 truncate rounded-full border border-border/70 bg-card px-3.5 py-2 text-xs font-medium text-muted-foreground md:inline-flex">{userEmail ?? "Sessão iniciada"}</span>
-            <Button className="rounded-full" variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />Sair
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container max-w-[88rem] py-8 md:py-11">
-        <div className="admin-page-intro mb-8 rounded-[1.75rem] border border-border/60 bg-card/75 p-6 shadow-sm shadow-foreground/[0.025] sm:p-8">
-          <div className="flex flex-col justify-between gap-7 xl:flex-row xl:items-end">
-          <div className="max-w-xl"><div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/[0.045] px-3 py-1.5 text-[0.66rem] font-bold uppercase tracking-[0.17em] text-primary"><LayoutDashboard className="h-3.5 w-3.5"/> Visão geral</div><h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-[2.15rem]">Conteúdos do site</h2><p className="mt-2.5 max-w-lg text-sm leading-6 text-muted-foreground">Organize notícias, equipa, parceiros e imagens num só lugar.</p></div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {[{label:"Notícias",count:news.length,icon:Newspaper},{label:"Membros",count:members.length,icon:Users},{label:"Parceiros",count:partners.length,icon:Handshake},{label:"Galeria",count:carrossel.length,icon:Images}].map(({label,count,icon:Icon})=><div key={label} className="admin-stat-card group min-w-[122px] rounded-2xl border border-border/65 bg-background/85 px-4 py-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-md hover:shadow-primary/[0.04]"><div className="flex items-center justify-between gap-3"><span className="text-xs font-medium text-muted-foreground">{label}</span><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/[0.07] text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground"><Icon className="h-4 w-4"/></span></div><div className="mt-3 text-2xl font-semibold tracking-tight text-card-foreground">{count}</div><p className="mt-0.5 text-[0.68rem] text-muted-foreground">registos publicados</p></div>)}
-          </div>
-          </div>
-        </div>
-        <div className="mb-7 grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(340px,0.85fr)]">
-          <div className="admin-welcome-card flex min-h-56 flex-col justify-between overflow-hidden rounded-[1.5rem] border border-border/60 bg-card p-6 sm:p-7">
-            <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Espaço de gestão</p><h3 className="mt-3 text-2xl font-semibold tracking-tight">Bem-vindo ao painel</h3><p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">Acompanha e atualiza os conteúdos que representam a Fundação no site.</p></div>
-            <div className="mt-6 flex flex-wrap gap-2 text-xs text-muted-foreground"><span className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5">{news.length + members.length + partners.length + carrossel.length} conteúdos no total</span><span className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5">Gestão editorial</span></div>
-          </div>
-          <ContentOverviewChart news={news.length} members={members.length} partners={partners.length} gallery={carrossel.length}/>
-        </div>
-        {loadError && <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{loadError}</div>}
-        <Tabs defaultValue="noticias" className="space-y-6">
-          <TabsList className="admin-tabs flex h-auto w-full flex-wrap justify-start gap-1.5 rounded-2xl border border-border/60 bg-card/75 p-2 shadow-sm sm:w-fit">
-            <TabsTrigger className="admin-tab-trigger rounded-xl px-4 py-2.5 text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" value="noticias">
-              <Newspaper className="h-4 w-4 mr-2" />
-              Notícias
-            </TabsTrigger>
-            <TabsTrigger className="admin-tab-trigger rounded-xl px-4 py-2.5 text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" value="membros">
-              <Users className="h-4 w-4 mr-2" />
-              Membros
-            </TabsTrigger>
-            <TabsTrigger className="admin-tab-trigger rounded-xl px-4 py-2.5 text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" value="parceiros">
-              <Handshake className="h-4 w-4 mr-2" />
-              Parceiros
-            </TabsTrigger>
-            <TabsTrigger className="admin-tab-trigger rounded-xl px-4 py-2.5 text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" value="carrossel">
-              <Briefcase className="h-4 w-4 mr-2" />
-              Carrossel
-            </TabsTrigger>
+    <Tabs defaultValue="noticias" className="min-h-screen">
+      <AppShell product="Administração do site" title="Conteúdos do site" email={userEmail ?? "Sessão iniciada"} onLogout={handleLogout} headerLink={{ href: "/platform/area", label: "Gestão de sócios" }} search={{ value: contentSearch, onChange: setContentSearch, placeholder: "Pesquisar conteúdo" }} sidebar={
+        <div className="space-y-3">
+          <div className="px-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground lg:pt-0">Conteúdo público</div>
+          <TabsList className="flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-lg bg-transparent p-0 lg:flex-col lg:items-stretch lg:overflow-visible">
+            <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="noticias"><Newspaper className="mr-2 h-4 w-4"/>Notícias <span className="ml-auto hidden text-xs text-muted-foreground lg:inline">{news.length}</span></TabsTrigger>
+            <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="membros"><Users className="mr-2 h-4 w-4"/>Equipa <span className="ml-auto hidden text-xs text-muted-foreground lg:inline">{members.length}</span></TabsTrigger>
+            <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="parceiros"><Handshake className="mr-2 h-4 w-4"/>Parceiros <span className="ml-auto hidden text-xs text-muted-foreground lg:inline">{partners.length}</span></TabsTrigger>
+            <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="carrossel"><Images className="mr-2 h-4 w-4"/>Galerias <span className="ml-auto hidden text-xs text-muted-foreground lg:inline">{carrossel.length}</span></TabsTrigger>
           </TabsList>
-
+        </div>
+      }>
+      <div className="space-y-6">
+        <div className="mb-2 border-b border-border/70 pb-5">
+          <div className="flex flex-col justify-between gap-7 xl:flex-row xl:items-end">
+          <div className="max-w-xl"><div className="mb-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary"><LayoutDashboard className="h-3.5 w-3.5"/> Visão geral</div><h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Conteúdos do site</h2><p className="mt-2.5 max-w-lg text-sm leading-6 text-muted-foreground">Organize notícias, equipa, parceiros e imagens num só lugar.</p></div>
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[{label:"Notícias",count:news.length,icon:Newspaper},{label:"Membros",count:members.length,icon:Users},{label:"Parceiros",count:partners.length,icon:Handshake},{label:"Galeria",count:carrossel.length,icon:Images}].map(({label,count,icon:Icon})=><div key={label} className="admin-stat-card min-w-[110px] rounded-lg border border-border/70 bg-card px-3.5 py-3"><div className="flex items-center justify-between gap-3"><span className="text-xs font-medium text-muted-foreground">{label}</span><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/[0.07] text-primary"><Icon className="h-4 w-4"/></span></div><div className="mt-3 text-2xl font-semibold tracking-tight text-card-foreground">{count}</div><p className="mt-0.5 text-[0.68rem] text-muted-foreground">registos publicados</p></div>)}
+          </div>
+          </div>
+        </div>
+        <div className="mb-7"><ContentOverviewChart news={news.length} members={members.length} partners={partners.length} gallery={carrossel.length}/></div>
+        {loadError && <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{loadError}</div>}
+        <div className="space-y-5">
           {/* Notícias Tab */}
           <TabsContent value="noticias">
             <Card className="site-card overflow-hidden">
@@ -405,17 +383,17 @@ export default function AdminDashboard() {
                 <Button onClick={() => {setEditingNews(null);setOpenNews(true)}}><Plus className="mr-2 h-4 w-4"/>Nova notícia</Button>
               </CardHeader>
               <CardContent className="admin-list-content">
-                {news.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">Nenhuma notícia cadastrada ainda.</div>
+                {visibleNews.length === 0 ? (
+                  <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">{searchTerm ? "Nenhuma notícia corresponde à pesquisa." : news.length === 0 ? "Nenhuma notícia cadastrada ainda." : "Não há notícias para mostrar."}</div>
                 ) : (
                   <div className="grid gap-3 md:grid-cols-2">
-                    {news.map((n) => (
+                    {visibleNews.map((n) => (
                       <div key={n.id} className="admin-content-card site-card site-card-interactive flex min-w-0 gap-4 p-3.5">
                         {n.imagem ? <div className="relative h-24 w-28 shrink-0 overflow-hidden rounded-lg bg-muted"><Image src={n.imagem} alt="" fill className="object-cover"/></div> : <div className="flex h-24 w-28 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Newspaper className="h-7 w-7"/></div>}
                         <div className="flex min-w-0 flex-1 flex-col"><div className="font-semibold leading-snug">{n.titulo}</div><div className="mt-1 line-clamp-2 text-sm text-muted-foreground">{n.descricao}</div><div className="mt-auto pt-2 text-xs text-muted-foreground">{n.data}</div>
                         </div>
                         <div className="flex shrink-0 flex-col gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => setPreviewItem({ kind: "noticia", item: n })}><Eye className="mr-1.5 h-4 w-4"/>Ver</Button>
+                          <Button variant="ghost" size="sm" onClick={() => showPreview({ kind: "noticia", item: n })}><Eye className="mr-1.5 h-4 w-4"/>Ver</Button>
                           <Button
                             variant="ghost" size="sm"
                             onClick={() => {
@@ -445,17 +423,17 @@ export default function AdminDashboard() {
                 <Button onClick={() => {setEditingMember(null);setOpenMember(true)}}><Plus className="mr-2 h-4 w-4"/>Novo membro</Button>
               </CardHeader>
               <CardContent className="admin-list-content">
-                {members.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">Nenhum membro cadastrado ainda.</div>
+                {visibleMembers.length === 0 ? (
+                  <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">{searchTerm ? "Nenhum membro corresponde à pesquisa." : members.length === 0 ? "Nenhum membro cadastrado ainda." : "Não há membros para mostrar."}</div>
                 ) : (
                   <div className="grid gap-3 md:grid-cols-2">
-                    {members.map((m) => (
+                    {visibleMembers.map((m) => (
                       <div key={m.id} className="admin-content-card site-card site-card-interactive flex items-center gap-4 p-3.5">
                         {m.imagem ? <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-muted"><Image src={m.imagem} alt={m.nome} fill className="object-cover"/></div> : <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"><Users className="h-6 w-6"/></div>}
                         <div className="min-w-0 flex-1"><div className="font-semibold">{m.nome}</div><div className="text-sm text-muted-foreground">{m.cargo}</div>
                         </div>
                         <div className="flex shrink-0 flex-col gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => setPreviewItem({ kind: "membro", item: m })}><Eye className="mr-1.5 h-4 w-4"/>Ver</Button>
+                          <Button variant="ghost" size="sm" onClick={() => showPreview({ kind: "membro", item: m })}><Eye className="mr-1.5 h-4 w-4"/>Ver</Button>
                           <Button
                             variant="ghost" size="sm"
                             onClick={() => {
@@ -485,17 +463,17 @@ export default function AdminDashboard() {
                 <Button onClick={() => {setEditingPartner(null);setOpenPartner(true)}}><Plus className="mr-2 h-4 w-4"/>Novo parceiro</Button>
               </CardHeader>
               <CardContent className="admin-list-content">
-                {partners.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">Nenhum parceiro cadastrado ainda.</div>
+                {visiblePartners.length === 0 ? (
+                  <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">{searchTerm ? "Nenhum parceiro corresponde à pesquisa." : partners.length === 0 ? "Nenhum parceiro cadastrado ainda." : "Não há parceiros para mostrar."}</div>
                 ) : (
                   <div className="grid gap-3 md:grid-cols-2">
-                    {partners.map((p) => (
+                    {visiblePartners.map((p) => (
                       <div key={p.id} className="admin-content-card site-card site-card-interactive flex items-center gap-4 p-3.5">
                         {p.logo ? <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-lg border border-border bg-muted p-2"><Image src={p.logo} alt={p.nome} fill className="object-contain p-2"/></div> : <div className="flex h-16 w-20 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Handshake className="h-6 w-6"/></div>}
                         <div className="min-w-0 flex-1"><div className="font-semibold">{p.nome}</div><div className="truncate text-sm text-muted-foreground">{p.website || p.descricao}</div>
                         </div>
                         <div className="flex shrink-0 flex-col gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => setPreviewItem({ kind: "parceiro", item: p })}><Eye className="mr-1.5 h-4 w-4"/>Ver</Button>
+                          <Button variant="ghost" size="sm" onClick={() => showPreview({ kind: "parceiro", item: p })}><Eye className="mr-1.5 h-4 w-4"/>Ver</Button>
                           <Button
                             variant="ghost" size="sm"
                             onClick={() => {
@@ -525,8 +503,8 @@ export default function AdminDashboard() {
                 <Button onClick={() => {setEditingCarousel(null);setOpenCarousel(true)}}><Plus className="mr-2 h-4 w-4"/>Adicionar imagem</Button>
               </CardHeader>
               <CardContent className="admin-list-content">
-                {carrossel.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">Nenhuma imagem no carrossel ainda.</div>
+                {visibleCarousel.length === 0 ? (
+                  <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">{searchTerm ? "Nenhuma imagem corresponde à pesquisa." : "Nenhuma imagem na galeria ainda."}</div>
                 ) : (
                   <div className="space-y-8">
                     {galleryGroups.filter((group) => group.items.length > 0).map((group) => <section key={group.id} className="space-y-3"><div className="flex items-center justify-between border-b pb-2"><div><h3 className="font-semibold">{group.label}</h3><p className="text-xs text-muted-foreground">{group.items.length} {group.items.length === 1 ? "imagem" : "imagens"}</p></div></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{group.items.map((c) => (
@@ -545,8 +523,9 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
-      </main>
+        </div>
+      </div>
+      </AppShell>
 
       {/* Dialogs for adding items */}
       <Dialog open={openMember} onOpenChange={setOpenMember}>
@@ -619,12 +598,12 @@ export default function AdminDashboard() {
           />
         </DialogContent>
       </Dialog>
-      <Dialog open={!!previewItem} onOpenChange={(open) => !open && setPreviewItem(null)}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>{previewItem && (previewItem.kind === "noticia" ? previewItem.item.titulo : previewItem.item.nome)}</DialogTitle>
-            <DialogDescription>Pré-visualização dos detalhes deste conteúdo.</DialogDescription>
-          </DialogHeader>
+      <Sheet open={previewOpen} onOpenChange={setPreviewOpen}>
+        <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-xl">
+          <SheetHeader className="pr-8">
+            <SheetTitle>{previewItem && (previewItem.kind === "noticia" ? previewItem.item.titulo : previewItem.item.nome)}</SheetTitle>
+            <SheetDescription>Detalhes do conteúdo selecionado. Fecha o painel para continuar exatamente na mesma lista.</SheetDescription>
+          </SheetHeader>
           {previewItem && <div className="space-y-4">
             {(previewItem.kind === "parceiro" ? previewItem.item.logo : previewItem.item.imagem) ? <div className="relative aspect-[16/9] overflow-hidden rounded-xl bg-muted"><Image src={previewItem.kind === "parceiro" ? previewItem.item.logo : previewItem.item.imagem} alt={previewItem.kind === "noticia" ? previewItem.item.titulo : previewItem.item.nome} fill className="object-contain" /></div> : null}
             {previewItem.kind === "membro" && <p className="font-medium text-primary">{previewItem.item.cargo}</p>}
@@ -634,8 +613,8 @@ export default function AdminDashboard() {
             {previewItem.kind === "noticia" && previewItem.item.link && <Button asChild><a href={previewItem.item.link} target="_blank" rel="noreferrer">Abrir ligação da notícia</a></Button>}
             {previewItem.kind === "parceiro" && previewItem.item.website && <Button asChild><a href={previewItem.item.website} target="_blank" rel="noreferrer">Visitar website</a></Button>}
           </div>}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
       <AlertDialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -652,6 +631,6 @@ export default function AdminDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </Tabs>
   )
 }
