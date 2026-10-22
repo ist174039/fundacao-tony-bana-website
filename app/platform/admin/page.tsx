@@ -355,7 +355,7 @@ export default function AdminDashboard() {
 
   return (
     <Tabs defaultValue="overview" className="min-h-screen">
-      <WorkspaceTemplate product="Administração do site" title="Conteúdos do site" email={userEmail ?? "Sessão iniciada"} onLogout={handleLogout} headerLink={{ href: "/platform/area", label: "Gestão de sócios" }} search={{ value: contentSearch, onChange: (value) => { setContentSearch(value); setSectionPages({ noticias: 1, membros: 1, parceiros: 1, carrossel: 1 }) }, placeholder: "Pesquisar conteúdo" }} sidebar={
+      <WorkspaceTemplate product="Administração do site" title="Conteúdos do site" email={userEmail ?? "Sessão iniciada"} onLogout={handleLogout} headerLink={{ href: "/platform/area", label: "Gestão de sócios" }} sidebar={
         <div className="space-y-3">
           <div className="px-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground lg:pt-0">Conteúdo público</div>
           <TabsList className="flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-lg bg-transparent p-0 lg:flex-col lg:items-stretch lg:overflow-visible">
