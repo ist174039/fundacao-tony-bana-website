@@ -16,9 +16,10 @@ export async function POST(request: Request) {
     const email = clean(body.email, 254).toLowerCase()
     const telefone = clean(body.telefone, 40)
     const mensagem = clean(body.mensagem, 1000)
+    const tipo = body.tipo === "duvida" ? "duvida" : body.tipo === "adesao" ? "adesao" : ""
     const consentimento = body.consentimento === true
-    if (nome.length < 2 || !/^\S+@\S+\.\S+$/.test(email) || telefone.length < 6 || !consentimento) {
-      return NextResponse.json({ error: "Confirma o nome, email, telefone e consentimento para enviar o pedido." }, { status: 400 })
+    if (!tipo || nome.length < 2 || !/^\S+@\S+\.\S+$/.test(email) || (tipo === "adesao" && telefone.length < 6) || (tipo === "duvida" && mensagem.length < 2) || !consentimento) {
+      return NextResponse.json({ error: "Confirma o nome, email, assunto e consentimento para enviar a mensagem." }, { status: 400 })
     }
 
     await getFirebaseAdminFirestore().collection("area_membership_intentions").add({
@@ -26,6 +27,7 @@ export async function POST(request: Request) {
       email,
       telefone,
       mensagem,
+      tipo,
       consentimento: true,
       consentidoEm: new Date().toISOString(),
       estado: "pendente",

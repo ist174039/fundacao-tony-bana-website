@@ -11,7 +11,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   try {
     const { id } = await context.params
     const { estado } = await request.json()
-    if (estado !== "aceite" && estado !== "rejeitado") return NextResponse.json({ error: "Estado de revisão inválido." }, { status: 400 })
+    if (estado !== "aceite" && estado !== "rejeitado" && estado !== "respondido") return NextResponse.json({ error: "Estado de revisão inválido." }, { status: 400 })
     const db = getFirebaseAdminFirestore()
     const intentionRef = db.collection("area_membership_intentions").doc(id)
     const intentionSnapshot = await intentionRef.get()
@@ -19,6 +19,12 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     if (intentionSnapshot.get("estado") !== "pendente") return NextResponse.json({ error: "Este pedido já foi revisto." }, { status: 409 })
 
     const intention = intentionSnapshot.data()!
+    if (estado === "respondido") {
+      if ((intention.tipo || "adesao") !== "duvida") return NextResponse.json({ error: "Só os pedidos de esclarecimento podem ser marcados como respondidos." }, { status: 400 })
+      await intentionRef.update({ estado, revistoEm: new Date().toISOString(), revistoPor: admin.uid })
+      return NextResponse.json({ ok: true })
+    }
+    if ((intention.tipo || "adesao") === "duvida" && estado === "aceite") return NextResponse.json({ error: "Um pedido de esclarecimento não pode ser aceite como adesão." }, { status: 400 })
     const now = new Date().toISOString()
     if (estado === "rejeitado") {
       await intentionRef.update({ estado, revistoEm: now, revistoPor: admin.uid })

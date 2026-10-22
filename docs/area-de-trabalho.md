@@ -10,7 +10,7 @@ As rotas `/api/area/*` exigem um Firebase ID token válido e revogação verific
 - email Firebase verificado presente em `FIREBASE_AREA_ADMIN_EMAILS`; ou
 - custom claim Firebase `admin: true`.
 
-Os pedidos enviados no formulário público da homepage ficam em `area_membership_intentions` e não criam sócios. Só um administrador pode revê-los. Ao aceitar um pedido, o servidor cria o registo oficial em `area_socios` e marca o pedido como aceite na mesma transação; a rejeição apenas atualiza o pedido. Os pedidos são privados e não têm rota pública de leitura.
+Os contactos e pedidos enviados no formulário público da homepage ficam em `area_membership_intentions` e não criam sócios. Só um administrador pode consultá-los. Ao aceitar uma intenção de adesão, o servidor cria o registo oficial em `area_socios` e marca o pedido como aceite na mesma transação; dúvidas podem ser marcadas como respondidas. Os pedidos são privados e não têm rota pública de leitura.
 
 As contas de sócios são associadas pelo administrador ao criar uma conta, selecionando um sócio ativo e usando o email registado desse sócio. A associação guarda o UID Firebase no respetivo registo. Estar autenticado, por si só, não dá acesso a `/area`.
 
