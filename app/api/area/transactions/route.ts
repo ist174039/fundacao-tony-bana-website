@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAccess, requireAreaAdmin } from "@/lib/server/firebase-admin"
+import { normalizeStoredXofAmount } from "@/lib/area-currency"
 
 export const runtime = "nodejs"
 const collectionName = "area_financial_transactions"
@@ -17,7 +18,7 @@ export async function GET(request: Request) {
     const transactions: Array<Record<string, unknown>> = snapshot.docs.map((doc) => {
       const data = doc.data()
       const { createdBy, ...visibleData } = data
-      return { id: doc.id, ...visibleData, ...(access.role === "admin" ? { createdBy } : {}) }
+      return { id: doc.id, ...visibleData, valorMinor: normalizeStoredXofAmount(data.valorMinor, data.moeda), moeda: "XOF", ...(access.role === "admin" ? { createdBy } : {}) }
     }).sort((a, b) => String((b as Record<string, unknown>).data).localeCompare(String((a as Record<string, unknown>).data)))
     return NextResponse.json({ transactions })
   } catch {
@@ -33,11 +34,12 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
     const tipo = body.tipo === "quota" ? "quota" : body.tipo === "doacao" ? "doacao" : ""
-    const valorMinor = Math.round(Number(body.valor) * 100)
+    const valorInput = Number(body.valor)
+    const valorMinor = Math.round(valorInput)
     const data = typeof body.data === "string" ? body.data : ""
     const metodo = typeof body.metodo === "string" ? body.metodo : ""
     const notas = typeof body.notas === "string" ? body.notas.trim().slice(0, 1000) : ""
-    if (!tipo || !Number.isSafeInteger(valorMinor) || valorMinor < 1 || !/^\d{4}-\d{2}-\d{2}$/.test(data) || !methods.has(metodo)) {
+    if (!tipo || !Number.isSafeInteger(valorInput) || valorMinor < 1 || !/^\d{4}-\d{2}-\d{2}$/.test(data) || !methods.has(metodo)) {
       return NextResponse.json({ error: "Indica tipo, valor, data e método de pagamento válidos." }, { status: 400 })
     }
 
@@ -46,7 +48,7 @@ export async function POST(request: Request) {
     const transaction = {
       tipo,
       valorMinor,
-      moeda: "AOA",
+      moeda: "XOF",
       data,
       metodo,
       notas,
@@ -69,8 +71,8 @@ export async function POST(request: Request) {
         const obligation = await firestoreTransaction.get(obligationRef)
         if (!obligation.exists) throw new Error("QUOTA_NOT_FOUND")
         const receipts = await firestoreTransaction.get(db.collection(collectionName).where("obligationId", "==", obligationId))
-        const alreadyPaid = receipts.docs.reduce((total, receipt) => total + Number(receipt.get("valorMinor") || 0), 0)
-        const amount = Number(obligation.get("valorMinor") || 0)
+        const alreadyPaid = receipts.docs.reduce((total, receipt) => total + normalizeStoredXofAmount(receipt.get("valorMinor"), receipt.get("moeda")), 0)
+        const amount = normalizeStoredXofAmount(obligation.get("valorMinor"), obligation.get("moeda"))
         if (alreadyPaid + valorMinor > amount) throw new Error("PAYMENT_EXCEEDS_BALANCE")
         transaction.obligationId = obligationId
         transaction.socioId = obligation.get("socioId")

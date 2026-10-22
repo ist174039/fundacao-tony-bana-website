@@ -18,12 +18,14 @@ Configurar `FIREBASE_SERVICE_ACCOUNT_JSON` como variável de ambiente privada em
 
 ## Registos financeiros
 
-- `area_quota_obligations`: obrigação por sócio e período `YYYY-MM`, com vencimento e montante inicial em unidades menores de AOA.
-- `area_financial_transactions`: movimentos de quota e doação. Um pagamento de quota referencia uma obrigação; o sistema calcula o estado e saldo a partir do histórico de recebimentos.
+- `area_quota_obligations`: obrigação por sócio e período `YYYY-MM`, com vencimento e montante em XOF (franco CFA da África Ocidental, sem casas decimais).
+- `area_financial_transactions`: movimentos de quota e doação em XOF. Um pagamento de quota referencia uma obrigação; o sistema calcula o estado e saldo a partir do histórico de recebimentos.
 - Doações são recebimentos separados e podem ser identificadas ou anónimas. Não são associadas a uma quota.
 - Os movimentos não têm edição nem eliminação na interface. Um processo de estorno/correção deve ser definido antes de operar com dados financeiros reais. O fluxo atual não processa pagamentos online; regista pagamentos recebidos manualmente.
 
 O modelo adapta o conceito de obrigações, recebimentos e reconciliação existente na documentação de Naraiana. O projeto de referência não contém lógica própria de quotas de associação ou doações. Valores, períodos, regras de cobrança e necessidades de relatórios ainda requerem validação pela Fundação.
+
+Os registos criados anteriormente com a moeda `AOA` são apresentados em XOF mantendo o valor nominal introduzido (os montantes antigos estavam guardados em centésimos). Não é aplicada uma conversão cambial.
 
 ## Configuração do Firestore
 
