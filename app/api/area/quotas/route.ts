@@ -29,7 +29,9 @@ export async function GET(request: Request) {
         const pagoMinor = paidByObligation.get(doc.id) || 0
         const { createdBy, ...visibleData } = data
         const valorMinor = normalizeStoredXofAmount(data.valorMinor, data.moeda)
-        return { id: doc.id, ...visibleData, valorMinor, moeda: "XOF", ...(access.role === "admin" ? { createdBy } : {}), pagoMinor, emDividaMinor: Math.max(0, valorMinor - pagoMinor), estado: pagoMinor >= valorMinor ? "paga" : pagoMinor > 0 ? "parcial" : "pendente" }
+        const emDividaMinor = Math.max(0, valorMinor - pagoMinor)
+        const overdue = emDividaMinor > 0 && String(data.vencimento || "") < new Date().toISOString().slice(0, 10)
+        return { id: doc.id, ...visibleData, valorMinor, moeda: "XOF", ...(access.role === "admin" ? { createdBy } : {}), pagoMinor, emDividaMinor, estado: emDividaMinor === 0 ? "paga" : overdue ? "em_atraso" : pagoMinor > 0 ? "parcial" : "pendente" }
       })
     return NextResponse.json({ quotas: quotaRows.sort((a, b) => String(b.periodo).localeCompare(String(a.periodo))) })
   } catch {

@@ -12,7 +12,7 @@ As rotas `/api/area/*` exigem um Firebase ID token válido e revogação verific
 
 Os contactos e pedidos enviados no formulário público da homepage ficam em `area_membership_intentions` e não criam sócios. Só um administrador pode consultá-los. Ao aceitar uma intenção de adesão, o servidor cria o registo oficial em `area_socios` e marca o pedido como aceite na mesma transação; dúvidas podem ser marcadas como respondidas. Os pedidos são privados e não têm rota pública de leitura.
 
-As contas de sócios são associadas pelo administrador ao criar uma conta, selecionando um sócio ativo e usando o email registado desse sócio. A associação guarda o UID Firebase no respetivo registo. Estar autenticado, por si só, não dá acesso a `/area`.
+O administrador pode associar contas ao criar utilizadores. Um utilizador autenticado também pode associar a própria conta a um registo de sócio ativo, desde que o email Firebase esteja verificado e coincida com o email do registo; cada UID e registo podem ter apenas uma associação. A associação guarda o UID Firebase no registo. Estar autenticado, por si só, não dá acesso aos dados dos sócios.
 
 Configurar `FIREBASE_SERVICE_ACCOUNT_JSON` como variável de ambiente privada em desenvolvimento e Vercel. O valor é o JSON completo de uma service account do projeto Firebase. Nunca usar o prefixo `NEXT_PUBLIC_`, guardar a chave no Git ou expô-la no browser. Definir pelo menos um UID autorizado em `FIREBASE_AREA_ADMIN_UIDS` antes de abrir `/area`.
 
@@ -20,6 +20,7 @@ Configurar `FIREBASE_SERVICE_ACCOUNT_JSON` como variável de ambiente privada em
 
 - `area_quota_obligations`: obrigação por sócio e período `YYYY-MM`, com vencimento e montante em XOF (franco CFA da África Ocidental, sem casas decimais).
 - `area_financial_transactions`: movimentos de quota e doação em XOF. Um pagamento de quota referencia uma obrigação; o sistema calcula o estado e saldo a partir do histórico de recebimentos.
+- A vista de sócio apresenta apenas as quotas, pagamentos e saldo do registo associado, com totais pagos, em dívida, vencidos e progresso por período.
 - Doações são recebimentos separados e podem ser identificadas ou anónimas. Não são associadas a uma quota.
 - Os movimentos não têm edição nem eliminação na interface. Um processo de estorno/correção deve ser definido antes de operar com dados financeiros reais. O fluxo atual não processa pagamentos online; regista pagamentos recebidos manualmente.
 

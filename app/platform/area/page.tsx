@@ -10,6 +10,7 @@ import { UsersManager } from "@/components/area/users-manager"
 import { FinanceManager } from "@/components/area/finance-manager"
 import { IntentionsManager } from "@/components/area/intentions-manager"
 import { ProfileSettings } from "@/components/area/profile-settings"
+import { MembershipLink } from "@/components/area/membership-link"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { onAuthChange, signOut } from "@/lib/firebase-auth"
@@ -51,7 +52,7 @@ export default function AreaPage() {
     </header>
     <main className="container max-w-7xl py-8 md:py-10">
       <div className="mb-7 max-w-2xl"><div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary"><ShieldCheck className="h-4 w-4"/>Gestão da Fundação</div><h2 className="text-3xl font-bold tracking-tight">{role === "socio" ? "Área do sócio" : "Sócios e finanças"}</h2><p className="mt-2 text-sm text-muted-foreground">{role === "socio" ? "Consulta o teu registo associativo, quotas e recebimentos." : "Um espaço de trabalho para acompanhar sócios, acessos, quotas e doações."}</p></div>
-      {accessError ? <Alert variant="destructive"><AlertDescription>{accessError}</AlertDescription></Alert> :
+      {accessError ? <><Alert variant="destructive"><AlertDescription>{accessError}</AlertDescription></Alert><MembershipLink/></> :
       <Tabs defaultValue="socios" className="space-y-5">
         <TabsList className={`grid h-auto w-full gap-1 rounded-xl border border-border/70 bg-card p-1.5 ${role === "admin" ? "grid-cols-2 sm:grid-cols-5" : "grid-cols-2 sm:grid-cols-3"}`}>
           <TabsTrigger value="socios"><Users className="mr-2 h-4 w-4"/>{role === "socio" ? "Meu registo" : "Sócios"}</TabsTrigger>
