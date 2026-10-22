@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
-interface AreaUser { uid: string; email: string; displayName: string; disabled: boolean; createdAt: string; lastSignInAt: string | null; isAdmin: boolean; linkedSocio: string | null }
+interface AreaUser { uid: string; email: string; displayName: string; disabled: boolean; createdAt: string; lastSignInAt: string | null; isAdmin: boolean; managedAdmin: boolean; linkedSocio: string | null }
 
 export function UsersManager() {
   const [users, setUsers] = useState<AreaUser[]>([])
@@ -79,6 +79,15 @@ export function UsersManager() {
     }
   }
 
+  const changeRole = async (user: AreaUser) => {
+    setError(""); setNotice("")
+    try {
+      await areaFetch("/api/area/users", { method: "PATCH", body: JSON.stringify({ uid: user.uid, admin: !user.isAdmin }) })
+      setNotice(user.isAdmin ? `Permissões administrativas removidas de ${user.email}.` : `${user.email} agora tem permissões de administrador. A pessoa terá de iniciar sessão novamente.`)
+      await refresh()
+    } catch (e) { setError(e instanceof Error ? e.message : "Não foi possível alterar as permissões.") }
+  }
+
   const resend = async (user: AreaUser) => {
     setError("")
     setNotice("")
@@ -119,7 +128,7 @@ export function UsersManager() {
             <TableCell>{user.isAdmin ? <Badge><ShieldCheck className="mr-1 h-3 w-3"/>Administrador</Badge> : <Badge variant="secondary"><UserRound className="mr-1 h-3 w-3"/>Utilizador</Badge>}</TableCell>
             <TableCell><Badge variant={user.disabled ? "destructive" : "outline"}>{user.disabled ? "Desativado" : "Ativo"}</Badge></TableCell>
             <TableCell className="text-sm text-muted-foreground">{user.lastSignInAt ? new Date(user.lastSignInAt).toLocaleDateString("pt-PT") : "Nunca"}</TableCell>
-            <TableCell><div className="flex justify-end gap-2">{!user.linkedSocio && !user.isAdmin && <Button size="sm" variant="outline" onClick={() => { setLinkingUser(user); setLinkSocioId("") }}><Link2 className="mr-1.5 h-4 w-4"/><span className="hidden sm:inline">Associar sócio</span></Button>}<Button size="sm" variant="outline" onClick={() => void resend(user)} disabled={user.disabled}><KeyRound className="mr-1.5 h-4 w-4"/><span className="hidden sm:inline">Reenviar acesso</span></Button><Button size="icon" variant="ghost" aria-label={user.disabled ? `Reativar ${user.email}` : `Desativar ${user.email}`} onClick={() => void toggle(user)}>{user.disabled ? <UserRoundPlus className="h-4 w-4"/> : <Ban className="h-4 w-4"/>}</Button></div></TableCell>
+            <TableCell><div className="flex justify-end gap-2">{!user.linkedSocio && !user.isAdmin && <Button size="sm" variant="outline" onClick={() => { setLinkingUser(user); setLinkSocioId("") }}><Link2 className="mr-1.5 h-4 w-4"/><span className="hidden sm:inline">Associar sócio</span></Button>}{!user.disabled && (user.managedAdmin || !user.isAdmin) && <Button size="sm" variant="outline" onClick={() => void changeRole(user)}><ShieldCheck className="mr-1.5 h-4 w-4"/><span className="hidden sm:inline">{user.isAdmin ? "Remover admin" : "Dar admin"}</span></Button>}<Button size="sm" variant="outline" onClick={() => void resend(user)} disabled={user.disabled}><KeyRound className="mr-1.5 h-4 w-4"/><span className="hidden sm:inline">Reenviar acesso</span></Button><Button size="icon" variant="ghost" aria-label={user.disabled ? `Reativar ${user.email}` : `Desativar ${user.email}`} onClick={() => void toggle(user)}>{user.disabled ? <UserRoundPlus className="h-4 w-4"/> : <Ban className="h-4 w-4"/>}</Button></div></TableCell>
           </TableRow>)}</TableBody>
         </Table>}
       </CardContent>

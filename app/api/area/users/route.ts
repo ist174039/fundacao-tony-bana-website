@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { randomBytes } from "node:crypto"
-import { getFirebaseAdminAuth, getFirebaseAdminFirestore, isConfiguredAreaAdminUser, isFirebaseAdminConfigured, requireAreaAdmin } from "@/lib/server/firebase-admin"
+import { getFirebaseAdminAuth, getFirebaseAdminFirestore, isConfiguredAreaAdminUser, isEnvironmentAreaAdminUser, isFirebaseAdminConfigured, requireAreaAdmin } from "@/lib/server/firebase-admin"
 
 export const runtime = "nodejs"
 
@@ -22,6 +22,7 @@ export async function GET(request: Request) {
         createdAt: user.metadata.creationTime,
         lastSignInAt: user.metadata.lastSignInTime ?? null,
         isAdmin: isConfiguredAreaAdminUser(user),
+        managedAdmin: user.customClaims?.admin === true && !isEnvironmentAreaAdminUser(user),
         linkedSocio: socioByUid.get(user.uid) ?? null,
       })),
     })
@@ -89,6 +90,26 @@ export async function PATCH(request: Request) {
     const uid = typeof body.uid === "string" ? body.uid : ""
     const disabled = body.disabled
     const linkSocioId = typeof body.linkSocioId === "string" ? body.linkSocioId : ""
+    const adminRole = body.admin
+    if (uid && typeof adminRole === "boolean" && typeof disabled === "undefined" && !linkSocioId) {
+      const auth = getFirebaseAdminAuth()
+      const target = await auth.getUser(uid)
+      if (isEnvironmentAreaAdminUser(target)) return NextResponse.json({ error: "As permissões deste administrador são geridas pela configuração segura do servidor." }, { status: 400 })
+      if (uid === admin.uid && !adminRole) return NextResponse.json({ error: "Não podes remover as tuas próprias permissões administrativas." }, { status: 400 })
+      if (!adminRole && isConfiguredAreaAdminUser(target)) {
+        let pageToken: string | undefined
+        let activeAdmins = 0
+        do {
+          const page = await auth.listUsers(1000, pageToken)
+          activeAdmins += page.users.filter((user) => !user.disabled && isConfiguredAreaAdminUser(user)).length
+          pageToken = page.pageToken
+        } while (pageToken)
+        if (activeAdmins <= 1) return NextResponse.json({ error: "Não é possível remover o último administrador ativo." }, { status: 409 })
+      }
+      await auth.setCustomUserClaims(uid, { ...target.customClaims, admin: adminRole })
+      await auth.revokeRefreshTokens(uid)
+      return NextResponse.json({ success: true })
+    }
     if (uid && linkSocioId && typeof disabled === "undefined") {
       const auth = getFirebaseAdminAuth()
       const target = await auth.getUser(uid)

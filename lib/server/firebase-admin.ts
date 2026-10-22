@@ -74,6 +74,10 @@ export function isConfiguredAreaAdminUser(user: { uid: string; email?: string; e
   })
 }
 
+export function isEnvironmentAreaAdminUser(user: { uid: string; email?: string }) {
+  return isConfiguredAreaAdmin({ uid: user.uid, email: user.email })
+}
+
 async function getVerifiedAreaIdentity(request: Request) {
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "")
   if (!token) return null
