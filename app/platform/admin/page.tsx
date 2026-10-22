@@ -351,11 +351,12 @@ export default function AdminDashboard() {
   if (!isAuthenticated) return null
 
   return (
-    <Tabs defaultValue="noticias" className="min-h-screen">
+    <Tabs defaultValue="overview" className="min-h-screen">
       <AppShell product="Administração do site" title="Conteúdos do site" email={userEmail ?? "Sessão iniciada"} onLogout={handleLogout} headerLink={{ href: "/platform/area", label: "Gestão de sócios" }} search={{ value: contentSearch, onChange: setContentSearch, placeholder: "Pesquisar conteúdo" }} sidebar={
         <div className="space-y-3">
           <div className="px-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground lg:pt-0">Conteúdo público</div>
           <TabsList className="flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-lg bg-transparent p-0 lg:flex-col lg:items-stretch lg:overflow-visible">
+            <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="overview"><LayoutDashboard className="mr-2 h-4 w-4"/>Visão geral</TabsTrigger>
             <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="noticias"><Newspaper className="mr-2 h-4 w-4"/>Notícias <span className="ml-auto hidden text-xs text-muted-foreground lg:inline">{news.length}</span></TabsTrigger>
             <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="membros"><Users className="mr-2 h-4 w-4"/>Equipa <span className="ml-auto hidden text-xs text-muted-foreground lg:inline">{members.length}</span></TabsTrigger>
             <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="parceiros"><Handshake className="mr-2 h-4 w-4"/>Parceiros <span className="ml-auto hidden text-xs text-muted-foreground lg:inline">{partners.length}</span></TabsTrigger>
@@ -364,6 +365,8 @@ export default function AdminDashboard() {
         </div>
       }>
       <div className="space-y-6">
+        {loadError && <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{loadError}</div>}
+        <TabsContent value="overview" className="mt-0 space-y-6">
         <div className="mb-2 border-b border-border/70 pb-5">
           <div className="flex flex-col justify-between gap-7 xl:flex-row xl:items-end">
           <div className="max-w-xl"><div className="mb-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary"><LayoutDashboard className="h-3.5 w-3.5"/> Visão geral</div><h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Conteúdos do site</h2><p className="mt-2.5 max-w-lg text-sm leading-6 text-muted-foreground">Organize notícias, equipa, parceiros e imagens num só lugar.</p></div>
@@ -373,7 +376,7 @@ export default function AdminDashboard() {
           </div>
         </div>
         <div className="mb-7"><ContentOverviewChart news={news.length} members={members.length} partners={partners.length} gallery={carrossel.length}/></div>
-        {loadError && <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{loadError}</div>}
+        </TabsContent>
         <div className="space-y-5">
           {/* Notícias Tab */}
           <TabsContent value="noticias">
