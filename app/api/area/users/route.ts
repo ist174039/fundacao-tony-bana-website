@@ -113,9 +113,6 @@ export async function PATCH(request: Request) {
     if (uid && linkSocioId && typeof disabled === "undefined") {
       const auth = getFirebaseAdminAuth()
       const target = await auth.getUser(uid)
-      if (isConfiguredAreaAdminUser(target)) {
-        return NextResponse.json({ error: "Uma conta administradora não pode ser associada como conta de sócio." }, { status: 400 })
-      }
       const db = getFirebaseAdminFirestore()
       const socioRef = db.collection("area_socios").doc(linkSocioId)
       const result = await db.runTransaction(async (transaction) => {

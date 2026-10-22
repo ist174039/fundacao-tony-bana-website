@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createHash } from "node:crypto"
-import { getFirebaseAdminAuth, getFirebaseAdminFirestore, isConfiguredAreaAdmin, isFirebaseAdminConfigured } from "@/lib/server/firebase-admin"
+import { getFirebaseAdminAuth, getFirebaseAdminFirestore, isFirebaseAdminConfigured } from "@/lib/server/firebase-admin"
 
 export const runtime = "nodejs"
 
@@ -12,8 +12,6 @@ export async function POST(request: Request) {
   try {
     const identity = await getFirebaseAdminAuth().verifyIdToken(token)
     if (!identity.email || !identity.email_verified) return NextResponse.json({ error: "Confirma o email da tua conta antes de pedir a associação." }, { status: 403 })
-    if (isConfiguredAreaAdmin(identity)) return NextResponse.json({ error: "Uma conta administradora não pode ser associada como conta de sócio." }, { status: 403 })
-
     const email = identity.email.trim().toLowerCase()
     const db = getFirebaseAdminFirestore()
     const socioRef = db.collection("area_socios").doc(createHash("sha256").update(email).digest("hex"))
