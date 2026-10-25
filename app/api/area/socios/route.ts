@@ -39,6 +39,8 @@ export async function POST(request: Request) {
   const secureMembers = process.env.FTB_SECURE_MEMBER_REGISTRY === "true"
   if (secureMembers && (!isFieldEncryptionConfigured() || !process.env.FTB_MEMBER_INDEX_KEY_B64))
     return NextResponse.json({ error: "O registo seguro de sócios não está configurado." }, { status: 503 })
+  if (secureMembers && process.env.FTB_ENCRYPT_FINANCIAL_PII !== "true")
+    return NextResponse.json({ error: "O registo seguro exige a cifragem financeira ativa." }, { status: 503 })
   try {
     const body = await request.json()
     const nome = clean(body.nome, 120)
