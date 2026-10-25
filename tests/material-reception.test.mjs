@@ -58,3 +58,8 @@ test("stock confirmation uses an atomic transaction and both endpoints are gated
   assert.match(endpoint, /FTB_MATERIAL_DONATIONS_ENABLED/)
   assert.match(reception, /FTB_MATERIAL_DONATIONS_ENABLED/)
 })
+test("material receipt creation does not return persisted private donor data", () => {
+  const endpoint = readFileSync("app/api/area/material-receptions/route.ts", "utf8")
+  assert.match(endpoint, /rececao:\s*\{\s*id:\s*ref\.id,\s*numero,\s*estado:\s*"pendente"\s*\}/)
+  assert.doesNotMatch(endpoint, /rececao:\s*\{\s*id:\s*ref\.id,\s*\.\.\.data/)
+})
