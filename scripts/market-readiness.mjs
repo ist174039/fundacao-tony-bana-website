@@ -14,6 +14,17 @@ export const REQUIRED_GATES = [
   "G08", "G09", "G10", "G11", "G12", "G13", "G14",
 ]
 export const SHA_PATTERN = /^[a-f0-9]{40}$/i
+export function isReviewableEvidenceUrl(value) {
+  if (typeof value !== "string") return false
+  try {
+    const url = new URL(value)
+    return url.protocol === "https:" && !!url.hostname &&
+      !url.username && !url.password
+  } catch {
+    return false
+  }
+}
+
 const VALID_STATES = new Set(["blocked", "pending", "passed"])
 
 export function assessRelease(manifest, { candidateSha, productionSha } = {}) {
@@ -38,7 +49,7 @@ export function assessRelease(manifest, { candidateSha, productionSha } = {}) {
     if (gate.status !== "passed") { blockers.push(gate.id); continue }
     const urls = gate.evidence_urls
     const hasEvidence = Array.isArray(urls) && urls.length > 0 &&
-      urls.every(x => typeof x === "string" && /^https:\/\//.test(x))
+      urls.every(isReviewableEvidenceUrl)
     const verified = typeof gate.verified_by === "string" && gate.verified_by.trim().length >= 3
     const linkedCommit = gate.candidate_sha === sha
     const productionScoped = gate.environment === "production"
