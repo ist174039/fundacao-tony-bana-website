@@ -33,7 +33,7 @@ export async function POST(request: Request) {
   const admin = await requireAreaAdmin(request)
   if (!admin) return NextResponse.json({ error: "Sem autorização para registar recebimentos." }, { status: 403 })
   const secureFinance = process.env.FTB_ENCRYPT_FINANCIAL_PII === "true"
-  if (secureFinance && !isFieldEncryptionConfigured()) return NextResponse.json({ error: "Cifragem financeira indisponível." }, { status: 503 })
+  if (!secureFinance || !isFieldEncryptionConfigured()) return NextResponse.json({ error: "Cifragem financeira indisponível." }, { status: 503 })
 
   try {
     const body = await request.json()
@@ -83,12 +83,12 @@ export async function POST(request: Request) {
         transaction.socioId = obligation.get("socioId")
         transaction.socioNome = openFinancialRecord(obligation.data()!, obligationRef.path, "quota", { allowLegacy: true }).socioNome
         transaction.periodo = obligation.get("periodo")
-        firestoreTransaction.create(ref, secureFinance ? sealFinancialRecord(transaction, ref.path, "transaction") : transaction)
+        firestoreTransaction.create(ref, sealFinancialRecord(transaction, ref.path, "transaction"))
       })
       return NextResponse.json({ success: true, id: ref.id }, { status: 201 })
     }
 
-    await ref.create(secureFinance ? sealFinancialRecord(transaction, ref.path, "transaction") : transaction)
+    await ref.create(sealFinancialRecord(transaction, ref.path, "transaction"))
     return NextResponse.json({ success: true, id: ref.id }, { status: 201 })
   } catch (error) {
     if (error instanceof Error && error.message === "QUOTA_NOT_FOUND") return NextResponse.json({ error: "Quota não encontrada." }, { status: 404 })
