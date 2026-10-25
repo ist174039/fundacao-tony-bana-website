@@ -62,6 +62,8 @@ export async function POST(request: Request) {
     const socioRef = db.collection("area_socios").doc(socioId)
     const socio = await socioRef.get()
     if (!socio.exists) return NextResponse.json({ error: "Sócio não encontrado." }, { status: 404 })
+    if (socio.get("privacidadeFormato") && !secureFinance)
+      return NextResponse.json({ error: "Os dados deste sócio exigem cifragem financeira." }, { status: 503 })
     const obligationId = `${socioId}_${periodo}`
     const ref = db.collection(obligationsCollection).doc(obligationId)
     const prior = await ref.get()
