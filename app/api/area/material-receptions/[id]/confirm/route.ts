@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from "@/lib/server/firebase-admin"
+import { isFieldEncryptionConfigured } from "@/lib/server/field-encryption.mjs"
+import { openMaterialReception, sealStockItem } from "@/lib/server/private-records.mjs"
 
 export const runtime = "nodejs"
 
@@ -11,7 +13,7 @@ export const runtime = "nodejs"
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   if (process.env.FTB_MATERIAL_DONATIONS_ENABLED !== "true")
     return NextResponse.json({ error: "Módulo indisponível." }, { status: 503 })
-  if (!isFirebaseAdminConfigured())
+  if (!isFirebaseAdminConfigured() || !isFieldEncryptionConfigured())
     return NextResponse.json({ error: "Serviço indisponível." }, { status: 503 })
   const admin = await requireAreaAdmin(request)
   if (!admin) return NextResponse.json({ error: "Sem autorização para confirmar receções." }, { status: 403 })
@@ -24,7 +26,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const completed = await db.runTransaction(async transaction => {
       const snapshot = await transaction.get(ref)
       if (!snapshot.exists) return "not-found" as const
-      const record = snapshot.data()!
+      const record = openMaterialReception(snapshot.data()!, ref.path)
       if (record.estado === "confirmada") return "already-confirmed" as const
       if (record.estado !== "pendente") return "invalid-state" as const
       const itens: Array<{
@@ -39,9 +41,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
         const lot = db.collection("area_material_stock_lots").doc(ref.id + "-" + i)
         const movement = db.collection("area_material_stock_movements").doc(ref.id + "-entrada-" + i)
         transaction.create(lot, {
-          rececaoId: ref.id, linha: i, categoria: linha.categoria, descricao: linha.descricao,
-          quantidadeRecebida: linha.quantidade, quantidadeDisponivel: linha.quantidade,
-          unidade: linha.unidade, estadoMaterial: linha.estado,
+          ...sealStockItem(linha, lot.path),
+          rececaoId: ref.id, linha: i,
           atualizadoEm: now,
         })
         transaction.create(movement, {

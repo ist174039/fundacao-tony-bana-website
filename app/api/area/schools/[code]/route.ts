@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server"
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from "@/lib/server/firebase-admin"
 import { isSchoolCode, parseSchoolInput, SchoolValidationError } from "@/lib/server/schools-validation.mjs"
+import { isFieldEncryptionConfigured } from "@/lib/server/field-encryption.mjs"
+import { patchSchool } from "@/lib/server/private-records.mjs"
 
 export const runtime = "nodejs"
 
 export async function PATCH(request: Request, { params }: { params: { code: string } }) {
   if (process.env.FTB_SCHOOLS_ENABLED !== "true") return NextResponse.json({ error: "Módulo indisponível." }, { status: 503 })
-  if (!isFirebaseAdminConfigured()) return NextResponse.json({ error: "Servidor ainda não configurado." }, { status: 503 })
+  if (!isFirebaseAdminConfigured() || !isFieldEncryptionConfigured()) return NextResponse.json({ error: "Servidor ou cifragem não configurados." }, { status: 503 })
   const admin = await requireAreaAdmin(request)
   if (!admin) return NextResponse.json({ error: "Acesso não autorizado." }, { status: 403 })
   const code = params.code?.toUpperCase()
@@ -19,7 +21,7 @@ export async function PATCH(request: Request, { params }: { params: { code: stri
     const ref = getFirebaseAdminFirestore().collection("area_schools").doc(code)
     const prior = await ref.get()
     if (!prior.exists) return NextResponse.json({ error: "Escola não encontrada." }, { status: 404 })
-    await ref.update({ ...changes, updatedBy: admin.uid, updatedAt: new Date().toISOString() })
+    await ref.update({ ...patchSchool(changes, prior.data(), ref.path), updatedBy: admin.uid, updatedAt: new Date().toISOString() })
     return NextResponse.json({ success: true, id: code })
   } catch (error) {
     if (error instanceof SchoolValidationError || error instanceof SyntaxError)
