@@ -2,14 +2,14 @@ import { NextResponse } from "next/server"
 import { createHash } from "node:crypto"
 import { getFirebaseAdminAuth, getFirebaseAdminFirestore, isFirebaseAdminConfigured } from "@/lib/server/firebase-admin"
 import { isFieldEncryptionConfigured } from "@/lib/server/field-encryption.mjs"
-import { findMemberByEmail, memberEmailMatches } from "@/lib/server/member-registry.mjs"
+import { findMemberByEmail, memberEmailMatches, isMemberIndexConfigured } from "@/lib/server/member-registry.mjs"
 
 export const runtime = "nodejs"
 
 export async function POST(request: Request) {
   if (!isFirebaseAdminConfigured()) return NextResponse.json({ error: "A área ainda não está configurada no servidor." }, { status: 503 })
   const secure = process.env.FTB_SECURE_MEMBER_REGISTRY === "true"
-  if (secure && (!isFieldEncryptionConfigured() || !process.env.FTB_MEMBER_INDEX_KEY_B64)) return NextResponse.json({ error: "Serviço indisponível." }, { status: 503 })
+  if (secure && (!isFieldEncryptionConfigured() || !isMemberIndexConfigured())) return NextResponse.json({ error: "Serviço indisponível." }, { status: 503 })
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "")
   if (!token) return NextResponse.json({ error: "Inicia sessão para associar a tua conta." }, { status: 401 })
 
