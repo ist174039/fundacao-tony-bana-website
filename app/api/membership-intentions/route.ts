@@ -9,8 +9,8 @@ const clean = (value: unknown, max: number) => typeof value === "string" ? value
 
 export async function POST(request: Request) {
   if (!isFirebaseAdminConfigured()) return NextResponse.json({ error: "O formulário está temporariamente indisponível." }, { status: 503 })
-  const secureMode = process.env.FTB_ENCRYPT_MEMBERSHIP_INTENTIONS === "true"
-  if (secureMode && !isFieldEncryptionConfigured()) {
+  // New enquiries must never persist private fields in plaintext.
+  if (process.env.FTB_ENCRYPT_MEMBERSHIP_INTENTIONS !== "true" || !isFieldEncryptionConfigured()) {
     return NextResponse.json({ error: "O formulário está temporariamente indisponível." }, { status: 503 })
   }
   try {
@@ -40,14 +40,8 @@ export async function POST(request: Request) {
       criadoEm: new Date().toISOString(),
     }
     const collection = getFirebaseAdminFirestore().collection("area_membership_intentions")
-    if (secureMode) {
-      const ref = collection.doc()
-      await ref.create(sealMembershipIntention(payload, ref.path))
-    } else {
-      // Historical behaviour retained until encryption keys and rollout flag are approved.
-      // Do not enable for real personal data beyond the approved transition window.
-      await collection.add(payload)
-    }
+    const ref = collection.doc()
+    await ref.create(sealMembershipIntention(payload, ref.path))
     return NextResponse.json({ ok: true }, { status: 201 })
   } catch {
     return NextResponse.json({ error: "Não foi possível enviar o pedido. Tenta novamente mais tarde." }, { status: 500 })
