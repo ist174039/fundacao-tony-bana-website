@@ -3,6 +3,7 @@ import { cert, getApps, initializeApp } from "firebase-admin/app"
 import { getAuth } from "firebase-admin/auth"
 import { getFirestore } from "firebase-admin/firestore"
 import { isAreaAdminIdentity, isEnvironmentAreaAdminIdentity } from "./area-admin-policy.mjs"
+import { openMember } from "./member-registry.mjs"
 
 export function isFirebaseAdminConfigured() {
   return Boolean(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)
@@ -111,7 +112,7 @@ export async function resolveAreaAccess(request: Request) {
     const socio = socios.docs[0]
     if (socio?.get("estado") === "ativo") {
       return {
-        access: { role: "socio" as const, uid: decoded.uid, socioId: socio.id, socioNome: String(socio.get("nome") || "") },
+        access: { role: "socio" as const, uid: decoded.uid, socioId: socio.id, socioNome: String(openMember(socio.data(), socio.ref.path).nome || "") },
         status: 200,
         error: null,
       }
