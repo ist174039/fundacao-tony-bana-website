@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useState, type FormEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -35,7 +35,7 @@ export function SchoolsManager() {
     return () => { alive = false }
   }, [selected])
 
-  const save = async (event: React.FormEvent) => {
+  const save = async (event: FormEvent) => {
     event.preventDefault(); setBusy(true); setError("")
     try {
       const r = await areaFetch<{ escola: School }>("/api/area/schools", { method: "POST", body: JSON.stringify(form) })
@@ -43,7 +43,7 @@ export function SchoolsManager() {
     } catch (e) { setError(e instanceof Error ? e.message : "Falha ao criar escola.") }
     finally { setBusy(false) }
   }
-  const saveContact = async (event: React.FormEvent) => {
+  const saveContact = async (event: FormEvent) => {
     event.preventDefault(); setBusy(true); setError("")
     try {
       const r = await areaFetch<{ contacto: Contact }>("/api/area/schools/" + encodeURIComponent(selected) + "/contacts", {
