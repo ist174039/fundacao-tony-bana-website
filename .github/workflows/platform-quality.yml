@@ -26,3 +26,28 @@ jobs:
       - run: npm ci
       - run: npm run test:security
       - run: npm run build
+
+  firestore-emulator:
+    name: Firestore Emulator (material & security)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: "true"
+      GCLOUD_PROJECT: demo-ftb-test
+      GOOGLE_CLOUD_PROJECT: demo-ftb-test
+      FIRESTORE_EMULATOR_HOST: 127.0.0.1:8080
+      FTB_SCHOOLS_ENABLED: "false"
+      FTB_MATERIAL_DONATIONS_ENABLED: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - run: npm ci
+      - name: Run isolated Firestore Emulator integration tests
+        run: npx --yes firebase-tools@14.24.0 emulators:exec --project demo-ftb-test --only firestore --config firebase.emulator.json "npm run test:integration"
