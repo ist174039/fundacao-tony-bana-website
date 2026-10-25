@@ -22,7 +22,7 @@ Contagens por vistas das bases no momento da consulta; bases vivas podem mudar. 
 | Architecture Components | 23 | 6 Atual observado; 13 Proposto; 4 A validar |
 | Sequence Diagrams | 17 | 17 Conceptual, sem verificação de fluxo |
 | Standards & Controls | 38 | 0 Conforme com evidência |
-| Tasks & Deliverables | 63 | 24 Em curso, 29 Backlog, 6 Bloqueado; **0 Concluído** (consultas podem mudar) |
+| Tasks & Deliverables | 63 | 24 Em curso, 33 Backlog, 6 Bloqueado; **0 Concluído** (consultas podem mudar) |
 | Test Cases | 61 | 23 Pronto; restantes Por desenhar |
 | Executions & Evidence | 20 | 9 Passou, 0 revisão Aceite; planos e observações não são testes |
 | Decisions & Risks | 37 | 29 Aberto; 8 Em análise; 0 Mitigado/Fechado |
