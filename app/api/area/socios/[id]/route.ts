@@ -15,7 +15,7 @@ export async function PATCH(request: Request, context: { params: { id: string } 
     return NextResponse.json({ error: "Sem autorização para gerir sócios." }, { status: 403 })
 
   const secureWrites = process.env.FTB_SECURE_MEMBER_REGISTRY === "true"
-  if (secureWrites && !isFieldEncryptionConfigured())
+  if (!secureWrites || !isFieldEncryptionConfigured())
     return NextResponse.json({ error: "Cifragem pessoal não configurada." }, { status: 503 })
 
   try {
