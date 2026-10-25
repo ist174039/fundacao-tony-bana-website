@@ -14,6 +14,7 @@ import { sealMaterialReception, openMaterialReception, sealSchool, openSchool, s
 import { confirmMaterialReceipt } from "../lib/server/material-stock.mjs"
 import { sealMembershipIntention, openMembershipIntention, classifyMembershipIntention } from "../lib/server/membership-privacy.mjs"
 import { migrateMembershipIntentionInEmulator } from "../lib/server/membership-intention-emulator.mjs"
+import { sealFinancialRecord, openFinancialRecord } from "../lib/server/financial-privacy.mjs"
 
 const host = process.env.FIRESTORE_EMULATOR_HOST
 const projectId = process.env.GCLOUD_PROJECT
@@ -169,6 +170,56 @@ test("malformed mixed plaintext/ciphertext documents fail migration without eras
   await ref.create({ ...sealed, nome: "exposto" })
   assert.equal(await migrateMembershipIntentionInEmulator(db, FieldValue, ref.id, { apply: true }), "invalid")
   assert.equal((await ref.get()).get("nome"), "exposto")
+})
+
+test("monetary donation PII is encrypted with totals and relationship keys preserved", async () => {
+  const donation = db.collection("area_financial_transactions").doc("donation" + unique)
+  const fixture = {
+    tipo: "doacao", valorMinor: 2500, moeda: "XOF", data: "2026-10-25",
+    metodo: "transferencia", socioId: "member-synthetic",
+    doador: "Pessoa Inventada", notas: "Ajuda sintética", createdBy: "admin-synthetic",
+  }
+  await donation.create(sealFinancialRecord(fixture, donation.path, "transaction"))
+  const raw = (await donation.get()).data()
+  assert.equal(raw.valorMinor, 2500)
+  assert.equal(raw.moeda, "XOF")
+  assert.equal(raw.socioId, "member-synthetic")
+  for (const secret of ["Pessoa Inventada", "Ajuda sintética"]) {
+    assert.equal(JSON.stringify(raw).includes(secret), false)
+  }
+  assert.equal(openFinancialRecord(raw, donation.path, "transaction").doador, "Pessoa Inventada")
+  const matching = await db.collection("area_financial_transactions").where("tipo", "==", "doacao")
+    .where("socioId", "==", "member-synthetic").get()
+  assert.ok(matching.docs.some(doc => doc.id === donation.id))
+})
+
+test("quota member label is private while obligation amount and payment query work", async () => {
+  const obligation = db.collection("area_quota_obligations").doc("synthetic_" + unique)
+  const original = {
+    socioId: "member-synthetic", socioNome: "Sócio Sintético",
+    periodo: "2026-10", vencimento: "2026-10-30",
+    valorMinor: 600, moeda: "XOF",
+  }
+  await obligation.create(sealFinancialRecord(original, obligation.path, "quota"))
+  const raw = (await obligation.get()).data()
+  assert.equal(raw.periodo, "2026-10")
+  assert.equal(raw.valorMinor, 600)
+  assert.equal(JSON.stringify(raw).includes("Sócio Sintético"), false)
+  assert.equal(openFinancialRecord(raw, obligation.path, "quota").socioNome, "Sócio Sintético")
+  const payment = db.collection("area_financial_transactions").doc("payment" + unique)
+  await payment.create(sealFinancialRecord({
+    tipo: "quota", obligationId: obligation.id,
+    socioId: "member-synthetic", socioNome: "Sócio Sintético",
+    periodo: "2026-10", data: "2026-10-25", valorMinor: 200, moeda: "XOF",
+    metodo: "dinheiro", notas: "Recibo fictício",
+  }, payment.path, "transaction"))
+  const receipts = await db.collection("area_financial_transactions")
+    .where("obligationId", "==", obligation.id).get()
+  assert.equal(receipts.size, 1)
+  assert.equal(receipts.docs[0].get("valorMinor"), 200)
+  const opened = openFinancialRecord(receipts.docs[0].data(), receipts.docs[0].ref.path, "transaction")
+  assert.equal(opened.socioNome, "Sócio Sintético")
+  assert.equal(opened.notas, "Recibo fictício")
 })
 
 test.after(async () => {

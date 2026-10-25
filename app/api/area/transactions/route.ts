@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAccess, requireAreaAdmin } from "@/lib/server/firebase-admin"
 import { normalizeStoredXofAmount } from "@/lib/area-currency"
+import { isFieldEncryptionConfigured } from "@/lib/server/field-encryption.mjs"
+import { sealFinancialRecord, openFinancialRecord } from "@/lib/server/financial-privacy.mjs"
 
 export const runtime = "nodejs"
 const collectionName = "area_financial_transactions"
@@ -16,7 +18,7 @@ export async function GET(request: Request) {
       ? await collection.where("socioId", "==", access.socioId).limit(2000).get()
       : await collection.orderBy("data", "desc").limit(2000).get()
     const transactions: Array<Record<string, unknown>> = snapshot.docs.map((doc) => {
-      const data = doc.data()
+      const data = openFinancialRecord(doc.data(), doc.ref.path, "transaction", { allowLegacy: true })
       const { createdBy, ...visibleData } = data
       return { id: doc.id, ...visibleData, valorMinor: normalizeStoredXofAmount(data.valorMinor, data.moeda), moeda: "XOF", ...(access.role === "admin" ? { createdBy } : {}) }
     }).sort((a, b) => String((b as Record<string, unknown>).data).localeCompare(String((a as Record<string, unknown>).data)))
@@ -30,6 +32,8 @@ export async function POST(request: Request) {
   if (!isFirebaseAdminConfigured()) return NextResponse.json({ error: "A área ainda não está configurada no servidor." }, { status: 503 })
   const admin = await requireAreaAdmin(request)
   if (!admin) return NextResponse.json({ error: "Sem autorização para registar recebimentos." }, { status: 403 })
+  const secureFinance = process.env.FTB_ENCRYPT_FINANCIAL_PII === "true"
+  if (secureFinance && !isFieldEncryptionConfigured()) return NextResponse.json({ error: "Cifragem financeira indisponível." }, { status: 503 })
 
   try {
     const body = await request.json()
@@ -76,14 +80,14 @@ export async function POST(request: Request) {
         if (alreadyPaid + valorMinor > amount) throw new Error("PAYMENT_EXCEEDS_BALANCE")
         transaction.obligationId = obligationId
         transaction.socioId = obligation.get("socioId")
-        transaction.socioNome = obligation.get("socioNome")
+        transaction.socioNome = openFinancialRecord(obligation.data()!, obligationRef.path, "quota", { allowLegacy: true }).socioNome
         transaction.periodo = obligation.get("periodo")
-        firestoreTransaction.create(ref, transaction)
+        firestoreTransaction.create(ref, secureFinance ? sealFinancialRecord(transaction, ref.path, "transaction") : transaction)
       })
       return NextResponse.json({ success: true, id: ref.id }, { status: 201 })
     }
 
-    await ref.create(transaction)
+    await ref.create(secureFinance ? sealFinancialRecord(transaction, ref.path, "transaction") : transaction)
     return NextResponse.json({ success: true, id: ref.id }, { status: 201 })
   } catch (error) {
     if (error instanceof Error && error.message === "QUOTA_NOT_FOUND") return NextResponse.json({ error: "Quota não encontrada." }, { status: 404 })
