@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   if (!token) return NextResponse.json({ error: "Inicia sessão para associar a tua conta." }, { status: 401 })
 
   try {
-    const identity = await getFirebaseAdminAuth().verifyIdToken(token)
+    const identity = await getFirebaseAdminAuth().verifyIdToken(token, true)
     if (!identity.email || !identity.email_verified) return NextResponse.json({ error: "Confirma o email da tua conta antes de pedir a associação." }, { status: 403 })
     const email = identity.email.trim().toLowerCase()
     const db = getFirebaseAdminFirestore()

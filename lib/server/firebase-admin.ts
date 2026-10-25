@@ -2,6 +2,7 @@ import "server-only"
 import { cert, getApps, initializeApp } from "firebase-admin/app"
 import { getAuth } from "firebase-admin/auth"
 import { getFirestore } from "firebase-admin/firestore"
+import { isAreaAdminIdentity, isEnvironmentAreaAdminIdentity } from "./area-admin-policy.mjs"
 
 export function isFirebaseAdminConfigured() {
   return Boolean(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)
@@ -40,42 +41,32 @@ export function getFirebaseAdminFirestore() {
 
 type AreaIdentity = { uid: string; admin?: boolean; email?: string; email_verified?: boolean }
 
-function configuredAreaAdminUids() {
-  const allowlistedUids = (process.env.FIREBASE_AREA_ADMIN_UIDS || "")
-    .split(",")
-    .map((uid) => uid.trim())
-    .filter(Boolean)
-  return allowlistedUids
-}
-
-function configuredAreaAdminEmails() {
-  return (process.env.FIREBASE_AREA_ADMIN_EMAILS || "")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean)
+function currentAdminAllowlists() {
+  return {
+    allowedUids: process.env.FIREBASE_AREA_ADMIN_UIDS || "",
+    allowedEmails: process.env.FIREBASE_AREA_ADMIN_EMAILS || "",
+  }
 }
 
 export function isConfiguredAreaAdmin(identity: AreaIdentity) {
-  const allowlistedUids = configuredAreaAdminUids()
-  const allowlistedEmails = configuredAreaAdminEmails()
-  const emailIsAllowlisted = Boolean(
-    identity.email &&
-    allowlistedEmails.includes(identity.email.toLowerCase()),
-  )
-
-  return identity.admin === true || allowlistedUids.includes(identity.uid) || emailIsAllowlisted
+  return isAreaAdminIdentity(identity, currentAdminAllowlists())
 }
 
 export function isConfiguredAreaAdminUser(user: { uid: string; email?: string; emailVerified?: boolean; customClaims?: Record<string, unknown> }) {
-  return user.customClaims?.admin === true || isConfiguredAreaAdmin({
+  return isConfiguredAreaAdmin({
     uid: user.uid,
     email: user.email,
     email_verified: user.emailVerified,
+    admin: user.customClaims?.admin === true,
   })
 }
 
-export function isEnvironmentAreaAdminUser(user: { uid: string; email?: string }) {
-  return isConfiguredAreaAdmin({ uid: user.uid, email: user.email })
+export function isEnvironmentAreaAdminUser(user: { uid: string; email?: string; emailVerified?: boolean }) {
+  return isEnvironmentAreaAdminIdentity({
+    uid: user.uid,
+    email: user.email,
+    email_verified: user.emailVerified,
+  }, currentAdminAllowlists())
 }
 
 async function getVerifiedAreaIdentity(request: Request) {
@@ -83,7 +74,7 @@ async function getVerifiedAreaIdentity(request: Request) {
   if (!token) return null
 
   try {
-    return await getFirebaseAdminAuth().verifyIdToken(token)
+    return await getFirebaseAdminAuth().verifyIdToken(token, true)
   } catch (error) {
     const code = typeof error === "object" && error && "code" in error ? String(error.code) : "unknown"
     console.error("[area-access] Firebase token verification failed", { code })
