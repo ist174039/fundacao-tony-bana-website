@@ -16,6 +16,8 @@ import { sealMembershipIntention, openMembershipIntention, classifyMembershipInt
 import { migrateMembershipIntentionInEmulator } from "../lib/server/membership-intention-emulator.mjs"
 import { sealFinancialRecord, openFinancialRecord } from "../lib/server/financial-privacy.mjs"
 import { createSecureMember, openMember, findMemberByEmail, legacyMemberDocumentId } from "../lib/server/member-registry.mjs"
+import { updateMemberProfile } from "../lib/server/member-operations.mjs"
+import { reviewMembershipIntention } from "../lib/server/intention-review.mjs"
 
 const host = process.env.FIRESTORE_EMULATOR_HOST
 const projectId = process.env.GCLOUD_PROJECT
@@ -278,6 +280,92 @@ test("legacy member ID blocks duplicate UUID member and resolves by email", asyn
   }, "admin-synthetic")
   assert.equal(attempted.status, "duplicate")
   assert.equal((await legacyRef.get()).get("nome"), "Registo Antigo")
+})
+
+test("PATCH of encrypted member preserves AES data and never creates cleartext fields", async () => {
+  const email = "update-" + unique + "@example.invalid"
+  const created = await createSecureMember(db, {
+    nome: "Sócio Original", email, telefone: "000",
+    observacoes: "Privado original", numeroSocio: "SYN-09",
+  }, "admin-synthetic")
+  assert.equal(created.status, "created")
+  const ref = db.collection("area_socios").doc(created.id)
+  const status = await updateMemberProfile(db, FieldValue, created.id, {
+    nome: "Sócio Atualizado", telefone: "111",
+    observacoes: "Informação confidencial", numeroSocio: "SYN-09", estado: "ativo",
+  }, "admin-fixture", { secureWrites: false })
+  assert.equal(status, "updated-encrypted") // flag rollback must not downgrade
+  const raw = (await ref.get()).data()
+  for (const clear of ["Sócio Atualizado", "Informação confidencial", "111", email]) {
+    assert.ok(!JSON.stringify(raw).includes(clear))
+  }
+  assert.equal(raw.nome, undefined)
+  assert.equal(raw.telefone, undefined)
+  assert.equal(openMember(raw, ref.path).nome, "Sócio Atualizado")
+  assert.equal(openMember(raw, ref.path).email, email)
+  assert.equal(raw.numeroSocio, "SYN-09")
+})
+
+test("legacy member update in secure mode encrypts PII in-place without changing ID", async () => {
+  const email = "legacy-update-" + unique + "@example.invalid"
+  const id = legacyMemberDocumentId(email)
+  const ref = db.collection("area_socios").doc(id)
+  await ref.create({ nome: "Antigo", email, telefone: "123", observacoes: "Legado", estado: "ativo" })
+  const result = await updateMemberProfile(db, FieldValue, id, {
+    nome: "Legado Protegido", telefone: "999", observacoes: "Nota privada",
+    numeroSocio: "L-1", estado: "ativo",
+  }, "admin-fixture", { secureWrites: true })
+  assert.equal(result, "updated-encrypted")
+  const snap = await ref.get(), raw = snap.data()
+  assert.equal(raw.email, undefined)
+  assert.equal(raw.nome, undefined)
+  assert.equal(raw.telefone, undefined)
+  assert.equal(openMember(raw, ref.path).email, email)
+  assert.equal(openMember(raw, ref.path).nome, "Legado Protegido")
+  assert.equal(ref.id, id) // the full reference migration is a separate reviewed change
+})
+
+test("encrypted adhesion approval creates exactly one secure member with linked origin", async () => {
+  const email = "new-adhesion-" + unique + "@example.invalid"
+  const ref = db.collection("area_membership_intentions").doc("approve" + unique)
+  await ref.create(sealMembershipIntention({
+    nome: "Pessoa Fictícia", email, telefone: "100",
+    mensagem: "Quero aderir", tipo: "adesao", estado: "pendente",
+    consentimento: true, criadoEm: new Date().toISOString(),
+  }, ref.path))
+  const outcomes = await Promise.all([
+    reviewMembershipIntention(db, ref.id, "aceite", "reviewer1", { secureMembers: true }),
+    reviewMembershipIntention(db, ref.id, "aceite", "reviewer2", { secureMembers: true }),
+  ])
+  assert.deepEqual(outcomes.map(x => x.status).sort(), ["accepted", "reviewed"])
+  const accepted = outcomes.find(x => x.status === "accepted")
+  const receipt = (await ref.get()).data()
+  assert.equal(receipt.estado, "aceite")
+  assert.equal(receipt.socioId, accepted.socioId)
+  assert.equal(JSON.stringify(receipt).includes(email), false)
+  const socioRef = db.collection("area_socios").doc(accepted.socioId)
+  const member = (await socioRef.get()).data()
+  assert.equal(JSON.stringify(member).includes(email), false)
+  assert.equal(openMember(member, socioRef.path).email, email)
+  assert.equal(member.pedidoAdesaoId, ref.id)
+  const linked = await findMemberByEmail(db, email)
+  assert.equal(linked.id, accepted.socioId)
+})
+
+test("encrypted adhesion cannot be downgraded to a legacy SHA(email) member", async () => {
+  const email = "no-downgrade-" + unique + "@example.invalid"
+  const ref = db.collection("area_membership_intentions").doc("downgrade" + unique)
+  await ref.create(sealMembershipIntention({
+    nome: "Candidato Teste", email, tipo: "adesao", estado: "pendente",
+    consentimento: true, criadoEm: new Date().toISOString(),
+  }, ref.path))
+  const result = await reviewMembershipIntention(db, ref.id, "aceite", "reviewer", { secureMembers: false })
+  assert.equal(result.status, "secure-mode-required")
+  assert.equal((await ref.get()).get("estado"), "pendente")
+  assert.equal((await db.collection("area_socios").doc(legacyMemberDocumentId(email)).get()).exists, false)
+  const refused = await reviewMembershipIntention(db, ref.id, "rejeitado", "reviewer", { secureMembers: false })
+  assert.equal(refused.status, "reviewed-ok")
+  assert.equal((await ref.get()).get("estado"), "rejeitado")
 })
 
 test.after(async () => {
