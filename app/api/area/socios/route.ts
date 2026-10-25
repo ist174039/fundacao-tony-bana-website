@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto"
 import { isFieldEncryptionConfigured } from "@/lib/server/field-encryption.mjs"
 import { createSecureMember, openMember, isMemberIndexConfigured } from "@/lib/server/member-registry.mjs"
 import { NextResponse } from "next/server"
@@ -37,9 +36,9 @@ export async function POST(request: Request) {
   const admin = await requireAreaAdmin(request)
   if (!admin) return NextResponse.json({ error: "Sem autorização para gerir sócios." }, { status: 403 })
   const secureMembers = process.env.FTB_SECURE_MEMBER_REGISTRY === "true"
-  if (secureMembers && (!isFieldEncryptionConfigured() || !isMemberIndexConfigured()))
+  if (!secureMembers || !isFieldEncryptionConfigured() || !isMemberIndexConfigured())
     return NextResponse.json({ error: "O registo seguro de sócios não está configurado." }, { status: 503 })
-  if (secureMembers && process.env.FTB_ENCRYPT_FINANCIAL_PII !== "true")
+  if (process.env.FTB_ENCRYPT_FINANCIAL_PII !== "true")
     return NextResponse.json({ error: "O registo seguro exige a cifragem financeira ativa." }, { status: 503 })
   try {
     const body = await request.json()
@@ -53,20 +52,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Preenche um nome, email e data de adesão válidos." }, { status: 400 })
     }
     const db = getFirebaseAdminFirestore()
-    if (secureMembers) {
-      const data = { nome, email, telefone, numeroSocio, observacoes, dataAdesao }
-      const result = await createSecureMember(db, data, admin.uid)
-      if (result.status !== "created")
-        return NextResponse.json({ error: "Já existe um sócio com este email." }, { status: 409 })
-      return NextResponse.json({ socio: { id: result.id, ...result.member } }, { status: 201 })
-    }
-    const id = createHash("sha256").update(email).digest("hex")
-    const ref = db.collection(collectionName).doc(id)
-    const prior = await ref.get()
-    if (prior.exists) return NextResponse.json({ error: "Já existe um sócio com este email." }, { status: 409 })
-    const socio = { nome, email, telefone, numeroSocio, observacoes, dataAdesao, estado: "ativo", createdBy: admin.uid, createdAt: new Date().toISOString() }
-    await ref.create(socio)
-    return NextResponse.json({ socio: { id, ...socio } }, { status: 201 })
+    const data = { nome, email, telefone, numeroSocio, observacoes, dataAdesao }
+    const result = await createSecureMember(db, data, admin.uid)
+    if (result.status !== "created")
+      return NextResponse.json({ error: "Já existe um sócio com este email." }, { status: 409 })
+    return NextResponse.json({ socio: { id: result.id, ...result.member } }, { status: 201 })
   } catch (error) {
     if ((error as { code?: string | number })?.code === 6 || (error as { code?: string | number })?.code === "already-exists") {
       return NextResponse.json({ error: "Já existe um sócio com este email." }, { status: 409 })
