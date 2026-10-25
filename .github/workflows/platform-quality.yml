@@ -29,6 +29,33 @@ jobs:
       - name: Audit market readiness without triggering a release
         run: npm run audit:market -- --sha "$GITHUB_SHA"
       - run: npm run build
+      - name: Smoke fail-closed private modules without credentials
+        run: |
+          set -euo pipefail
+          npm run start -- --hostname 127.0.0.1 --port 3100 > /tmp/ftb-smoke.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          status=""
+          for attempt in $(seq 1 45); do
+            status=$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:3100/platform/login || true)
+            if [ "$status" = "200" ]; then break; fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              echo "Next.js exited before the smoke test was ready"
+              exit 1
+            fi
+            sleep 1
+          done
+          if [ "$status" != "200" ]; then
+            echo "Platform login did not become ready (HTTP $status)"
+            exit 1
+          fi
+          for endpoint in /api/area/schools /api/area/material-receptions; do
+            status=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' "http://127.0.0.1:3100$endpoint")
+            if [ "$status" != "503" ]; then
+              echo "Fail-closed smoke rejected: $endpoint returned HTTP $status instead of 503"
+              exit 1
+            fi
+          done
 
   firestore-emulator:
     name: Firestore Emulator (material & security)
