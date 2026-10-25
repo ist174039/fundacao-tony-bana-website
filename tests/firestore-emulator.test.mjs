@@ -6,12 +6,14 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import { randomBytes } from "node:crypto"
 import { initializeApp as initializeAdminApp, deleteApp as deleteAdminApp } from "firebase-admin/app"
-import { getFirestore as getAdminFirestore } from "firebase-admin/firestore"
+import { getFirestore as getAdminFirestore, FieldValue } from "firebase-admin/firestore"
 import { initializeApp as initializeClientApp, deleteApp as deleteClientApp } from "firebase/app"
 import { getFirestore as getClientFirestore, connectFirestoreEmulator, doc, getDoc, setDoc, terminate } from "firebase/firestore"
 import { encryptJson } from "../lib/server/field-encryption.mjs"
 import { sealMaterialReception, openMaterialReception, sealSchool, openSchool, sealContact, openContact } from "../lib/server/private-records.mjs"
 import { confirmMaterialReceipt } from "../lib/server/material-stock.mjs"
+import { sealMembershipIntention, openMembershipIntention, classifyMembershipIntention } from "../lib/server/membership-privacy.mjs"
+import { migrateMembershipIntentionInEmulator } from "../lib/server/membership-intention-emulator.mjs"
 
 const host = process.env.FIRESTORE_EMULATOR_HOST
 const projectId = process.env.GCLOUD_PROJECT
@@ -125,6 +127,48 @@ test("invalid, absent or already confirmed receipts do not add stock", async () 
   })
   assert.equal(await confirmMaterialReceipt(db, id, "admin"), "invalid-state")
   assert.equal((await db.collection("area_material_stock_lots").where("rececaoId", "==", id).get()).size, 0)
+})
+
+test("membership intention migration is dry-run by default and idempotently removes cleartext in emulator", async () => {
+  const ref = db.collection("area_membership_intentions").doc("synthetic" + unique)
+  const fixture = {
+    nome: "Pessoa Sintética",
+    email: "ficcao@example.invalid",
+    telefone: "000000000",
+    mensagem: "Pedido de adesão simulado",
+    estado: "pendente",
+    tipo: "adesao",
+    consentimento: true,
+    criadoEm: new Date().toISOString(),
+  }
+  await ref.create(fixture)
+  assert.equal(await migrateMembershipIntentionInEmulator(db, FieldValue, ref.id), "legacy")
+  assert.equal((await ref.get()).get("nome"), "Pessoa Sintética")
+
+  assert.equal(await migrateMembershipIntentionInEmulator(db, FieldValue, ref.id, { apply: true }), "migrated")
+  const encrypted = (await ref.get()).data()
+  assert.equal(classifyMembershipIntention(encrypted), "encrypted")
+  for (const secret of ["Pessoa Sintética", "ficcao@example.invalid", "000000000", "Pedido de adesão simulado"]) {
+    assert.equal(JSON.stringify(encrypted).includes(secret), false)
+  }
+  assert.equal(encrypted.nome, undefined)
+  assert.equal(encrypted.email, undefined)
+  assert.equal(encrypted.estado, "pendente")
+  assert.equal(openMembershipIntention(encrypted, ref.path).nome, "Pessoa Sintética")
+  assert.equal(await migrateMembershipIntentionInEmulator(db, FieldValue, ref.id, { apply: true }), "encrypted")
+
+  const refNew = db.collection("area_membership_intentions").doc("newsynthetic" + unique)
+  await refNew.create(sealMembershipIntention(fixture, refNew.path))
+  assert.equal(await migrateMembershipIntentionInEmulator(db, FieldValue, refNew.id, { apply: true }), "encrypted")
+  assert.equal(await migrateMembershipIntentionInEmulator(db, FieldValue, "missing" + unique), "missing")
+})
+
+test("malformed mixed plaintext/ciphertext documents fail migration without erasure", async () => {
+  const ref = db.collection("area_membership_intentions").doc("conflict" + unique)
+  const sealed = sealMembershipIntention({ nome: "Exemplo", email: "safe@example.invalid", tipo: "adesao" }, ref.path)
+  await ref.create({ ...sealed, nome: "exposto" })
+  assert.equal(await migrateMembershipIntentionInEmulator(db, FieldValue, ref.id, { apply: true }), "invalid")
+  assert.equal((await ref.get()).get("nome"), "exposto")
 })
 
 test.after(async () => {
