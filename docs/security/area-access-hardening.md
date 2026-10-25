@@ -70,3 +70,26 @@ authorized and short-lived access paths. Do not publish them during this increme
 This increment improves the existing *admin/socio* access model only.
 It does not implement the planned school/pupil modules, a complete RBAC/ABAC
 policy, new Firestore rules, or a production migration.
+
+
+## Increment 2 — material donation and institutional school registry (gated)
+
+Implemented in the same feature branch for review:
+- Admin-only \`/api/area/schools\` (school registry) with \`/api/area/schools/[code]/contacts\`;
+- Admin-only \`/api/area/material-receptions\` creates a **pending** material reception with donor, items, quantities, condition and physical receipt reference;
+- \`POST /api/area/material-receptions/[id]/confirm\` performs a Firestore **transaction** to create one stock lot and one stock entrance movement per item, while marking the reception **confirmed** exactly once;
+- Admin-only UI tabs added to \`/platform/area\` for the two workflows, with validation and unit-test specifications.
+
+**Safe defaults**: both \`FTB_SCHOOLS_ENABLED\` and
+\`FTB_MATERIAL_DONATIONS_ENABLED\` must be explicitly \`true\`; otherwise the corresponding API responds 503. Leave both **disabled** in production until rules, TEST project, test identities, supplier contact privacy and audit procedures are approved.
+
+**Known scope limitations**
+- Only admins can use the initial school/material workflows; school-level RBAC is not implemented.
+- Stock can be added but not yet distributed, transferred, corrected or reconciled. Do not interpret stock lots as a complete inventory module.
+- Material donor details are embedded in the reception during this increment. A canonical person/entity registry must replace duplication in a later milestone.
+- The \`referenciaDocumento\` field is a **reference to an existing physical guide**, not a scanned receipt or uploaded photograph. Secure uploads, content screening, private Storage and retrieval audit are separate pending requirements.
+- Donations received in poor condition are recorded as received, but must not be distributed before quality review in a later workflow.
+- Confirmed reception records and stock movements must be treated as immutable in operational processes; corrections will require a dedicated audited reversal process.
+- Firestore/Storage Security Rules must be checked before enabling flags on any environment with real contacts or donors.
+
+**Tests**: \`npm run test:security\` runs the policy, school validation, material validation and static transaction/feature-flag checks. These tests do **not** replace Firestore Emulator integration tests for concurrent confirmation or privacy access tests.
