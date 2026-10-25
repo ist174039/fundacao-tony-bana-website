@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto"
 import { isFieldEncryptionConfigured } from "@/lib/server/field-encryption.mjs"
-import { createSecureMember, openMember } from "@/lib/server/member-registry.mjs"
+import { createSecureMember, openMember, isMemberIndexConfigured } from "@/lib/server/member-registry.mjs"
 import { NextResponse } from "next/server"
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAccess, requireAreaAdmin } from "@/lib/server/firebase-admin"
 
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   const admin = await requireAreaAdmin(request)
   if (!admin) return NextResponse.json({ error: "Sem autorização para gerir sócios." }, { status: 403 })
   const secureMembers = process.env.FTB_SECURE_MEMBER_REGISTRY === "true"
-  if (secureMembers && (!isFieldEncryptionConfigured() || !process.env.FTB_MEMBER_INDEX_KEY_B64))
+  if (secureMembers && (!isFieldEncryptionConfigured() || !isMemberIndexConfigured()))
     return NextResponse.json({ error: "O registo seguro de sócios não está configurado." }, { status: 503 })
   if (secureMembers && process.env.FTB_ENCRYPT_FINANCIAL_PII !== "true")
     return NextResponse.json({ error: "O registo seguro exige a cifragem financeira ativa." }, { status: 503 })
