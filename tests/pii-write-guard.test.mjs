@@ -38,24 +38,24 @@ test("unauthorised privacy downgrade cannot create member from a legacy applicat
 
 test("public applications write only encrypted payloads", () => {
   const route = text("app/api/membership-intentions/route.ts")
-  assert.match(route, /FTB_ENCRYPT_MEMBERSHIP_INTENTIONS !== "true" \\|\\| !isFieldEncryptionConfigured\\(\\)/)
-  assert.match(route, /ref\\.create\\(sealMembershipIntention\\(payload, ref\\.path\\)\\)/)
-  assert.doesNotMatch(route, /collection\\.add\\(payload\\)/)
+  assert.ok(route.includes('FTB_ENCRYPT_MEMBERSHIP_INTENTIONS !== "true" || !isFieldEncryptionConfigured()'))
+  assert.ok(route.includes('ref.create(sealMembershipIntention(payload, ref.path))'))
+  assert.ok(!route.includes("collection.add(payload)"))
 })
 
 test("member creation and profile updates require secure configuration", () => {
   const members = text("app/api/area/socios/route.ts")
   const update = text("app/api/area/socios/[id]/route.ts")
-  assert.match(members, /!secureMembers \\|\\| !isFieldEncryptionConfigured\\(\\) \\|\\| !isMemberIndexConfigured\\(\\)/)
-  assert.match(members, /FTB_ENCRYPT_FINANCIAL_PII !== "true"/)
-  assert.doesNotMatch(members, /createHash\\("sha256"\\)/)
-  assert.match(update, /!secureWrites \\|\\| !isFieldEncryptionConfigured\\(\\)/)
+  assert.ok(members.includes("!secureMembers || !isFieldEncryptionConfigured() || !isMemberIndexConfigured()"))
+  assert.ok(members.includes('FTB_ENCRYPT_FINANCIAL_PII !== "true"'))
+  assert.ok(!members.includes('createHash("sha256")'))
+  assert.ok(update.includes("!secureWrites || !isFieldEncryptionConfigured()"))
 })
 
 test("financial POST endpoints never write an unencrypted new record", () => {
   for (const path of ["app/api/area/quotas/route.ts", "app/api/area/transactions/route.ts"]) {
     const route = text(path)
-    assert.match(route, /!secureFinance \\|\\| !isFieldEncryptionConfigured\\(\\)/)
-    assert.doesNotMatch(route, /secureFinance \\? sealFinancialRecord/)
+    assert.ok(route.includes("!secureFinance || !isFieldEncryptionConfigured()"), path)
+    assert.ok(!route.includes("secureFinance ? sealFinancialRecord"), path)
   }
 })
