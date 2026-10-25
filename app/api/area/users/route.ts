@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { randomBytes } from "node:crypto"
 import { getFirebaseAdminAuth, getFirebaseAdminFirestore, isConfiguredAreaAdminUser, isEnvironmentAreaAdminUser, isFirebaseAdminConfigured, requireAreaAdmin } from "@/lib/server/firebase-admin"
+import { openMember, memberEmailMatches } from "@/lib/server/member-registry.mjs"
 
 export const runtime = "nodejs"
 
@@ -12,7 +13,7 @@ export async function GET(request: Request) {
   try {
     const result = await getFirebaseAdminAuth().listUsers(1000)
     const socioSnapshot = await getFirebaseAdminFirestore().collection("area_socios").get()
-    const socioByUid = new Map(socioSnapshot.docs.filter((doc) => typeof doc.get("uid") === "string").map((doc) => [doc.get("uid") as string, String(doc.get("nome") || "")]))
+    const socioByUid = new Map(socioSnapshot.docs.filter((doc) => typeof doc.get("uid") === "string").map((doc) => [doc.get("uid") as string, String(openMember(doc.data(), doc.ref.path).nome || "")]))
     return NextResponse.json({
       users: result.users.map((user) => ({
         uid: user.uid,
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
       if (!socio.exists || socio.get("estado") !== "ativo") {
         return NextResponse.json({ error: "O sócio selecionado não existe ou está inativo." }, { status: 400 })
       }
-      if (String(socio.get("email") || "").toLowerCase() !== email) {
+      if (!memberEmailMatches(socio.data(), socioRef!.path, email)) {
         return NextResponse.json({ error: "O email da conta deve coincidir com o email do registo do sócio." }, { status: 400 })
       }
       if (socio.get("uid")) return NextResponse.json({ error: "Este sócio já tem uma conta associada." }, { status: 409 })
@@ -119,7 +120,7 @@ export async function PATCH(request: Request) {
         const socio = await transaction.get(socioRef)
         if (!socio.exists || socio.get("estado") !== "ativo") return "invalid"
         if (socio.get("uid")) return "linked"
-        if (String(socio.get("email") || "").toLowerCase() !== (target.email || "").toLowerCase()) return "email"
+        if (!memberEmailMatches(socio.data(), socioRef.path, target.email || "")) return "email"
         transaction.update(socioRef, { uid, accountLinkedAt: new Date().toISOString(), updatedBy: admin.uid })
         return "ok"
       })
