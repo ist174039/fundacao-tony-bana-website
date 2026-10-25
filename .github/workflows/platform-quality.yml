@@ -25,6 +25,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:security
+      - run: npm run test:market
+      - name: Audit market readiness without triggering a release
+        run: npm run audit:market -- --sha "$GITHUB_SHA"
       - run: npm run build
 
   firestore-emulator:
