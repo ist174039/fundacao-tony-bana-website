@@ -18,8 +18,13 @@ export async function POST(request: Request) {
     if (!identity.email || !identity.email_verified) return NextResponse.json({ error: "Confirma o email da tua conta antes de pedir a associação." }, { status: 403 })
     const email = identity.email.trim().toLowerCase()
     const db = getFirebaseAdminFirestore()
-    const socioRef = secure ? await findMemberByEmail(db, email) : db.collection("area_socios").doc(createHash("sha256").update(email).digest("hex"))
-    if (!socioRef) return NextResponse.json({ error: "Sócio não encontrado." }, { status: 404 })
+    // Keep the reference typed as Firestore DocumentReference for transaction.get().
+    let socioRef = db.collection("area_socios").doc(createHash("sha256").update(email).digest("hex"))
+    if (secure) {
+      const matched = await findMemberByEmail(db, email)
+      if (!matched) return NextResponse.json({ error: "Sócio não encontrado." }, { status: 404 })
+      socioRef = db.collection("area_socios").doc(matched.id)
+    }
     const result = await db.runTransaction(async (transaction) => {
       const socio = await transaction.get(socioRef)
       const ownLink = await transaction.get(db.collection("area_socios").where("uid", "==", identity.uid).limit(1))
