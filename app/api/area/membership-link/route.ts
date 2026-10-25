@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server"
 import { createHash } from "node:crypto"
 import { getFirebaseAdminAuth, getFirebaseAdminFirestore, isFirebaseAdminConfigured } from "@/lib/server/firebase-admin"
+import { isFieldEncryptionConfigured } from "@/lib/server/field-encryption.mjs"
+import { findMemberByEmail, memberEmailMatches, isMemberIndexConfigured } from "@/lib/server/member-registry.mjs"
 
 export const runtime = "nodejs"
 
 export async function POST(request: Request) {
   if (!isFirebaseAdminConfigured()) return NextResponse.json({ error: "A área ainda não está configurada no servidor." }, { status: 503 })
+  const secure = process.env.FTB_SECURE_MEMBER_REGISTRY === "true"
+  if (secure && (!isFieldEncryptionConfigured() || !isMemberIndexConfigured())) return NextResponse.json({ error: "Serviço indisponível." }, { status: 503 })
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "")
   if (!token) return NextResponse.json({ error: "Inicia sessão para associar a tua conta." }, { status: 401 })
 
@@ -14,11 +18,17 @@ export async function POST(request: Request) {
     if (!identity.email || !identity.email_verified) return NextResponse.json({ error: "Confirma o email da tua conta antes de pedir a associação." }, { status: 403 })
     const email = identity.email.trim().toLowerCase()
     const db = getFirebaseAdminFirestore()
-    const socioRef = db.collection("area_socios").doc(createHash("sha256").update(email).digest("hex"))
+    // Keep the reference typed as Firestore DocumentReference for transaction.get().
+    let socioRef = db.collection("area_socios").doc(createHash("sha256").update(email).digest("hex"))
+    if (secure) {
+      const matched = await findMemberByEmail(db, email)
+      if (!matched) return NextResponse.json({ error: "Sócio não encontrado." }, { status: 404 })
+      socioRef = db.collection("area_socios").doc(matched.id)
+    }
     const result = await db.runTransaction(async (transaction) => {
       const socio = await transaction.get(socioRef)
       const ownLink = await transaction.get(db.collection("area_socios").where("uid", "==", identity.uid).limit(1))
-      if (!socio.exists || socio.get("estado") !== "ativo" || String(socio.get("email") || "").trim().toLowerCase() !== email) return "not_found"
+      if (!socio.exists || socio.get("estado") !== "ativo" || !memberEmailMatches(socio.data(), socioRef.path, email)) return "not_found"
       if (ownLink.docs.some((doc) => doc.id !== socioRef.id)) return "other_link"
       if (socio.get("uid") === identity.uid) return "already_linked"
       if (socio.get("uid")) return "linked_elsewhere"

@@ -15,6 +15,7 @@ import { confirmMaterialReceipt } from "../lib/server/material-stock.mjs"
 import { sealMembershipIntention, openMembershipIntention, classifyMembershipIntention } from "../lib/server/membership-privacy.mjs"
 import { migrateMembershipIntentionInEmulator } from "../lib/server/membership-intention-emulator.mjs"
 import { sealFinancialRecord, openFinancialRecord } from "../lib/server/financial-privacy.mjs"
+import { createSecureMember, openMember, findMemberByEmail, legacyMemberDocumentId } from "../lib/server/member-registry.mjs"
 
 const host = process.env.FIRESTORE_EMULATOR_HOST
 const projectId = process.env.GCLOUD_PROJECT
@@ -24,6 +25,7 @@ if (!["127.0.0.1:8080", "localhost:8080"].includes(host) || !/^demo-[a-z0-9-]+$/
 // Keys exist only in this process, for fake documents, and are not printed.
 process.env.FTB_DATA_ENCRYPTION_KEYS_JSON = JSON.stringify({ integration: randomBytes(32).toString("base64") })
 process.env.FTB_DATA_ENCRYPTION_ACTIVE_KID = "integration"
+process.env.FTB_MEMBER_INDEX_KEY_B64 = randomBytes(32).toString("base64")
 
 const unique = randomBytes(8).toString("hex")
 const adminApp = initializeAdminApp({ projectId }, "ftb-emulator-admin-" + unique)
@@ -220,6 +222,62 @@ test("quota member label is private while obligation amount and payment query wo
   const opened = openFinancialRecord(receipts.docs[0].data(), receipts.docs[0].ref.path, "transaction")
   assert.equal(opened.socioNome, "Sócio Sintético")
   assert.equal(opened.notas, "Recibo fictício")
+})
+
+test("secure members have UUID IDs, HMAC lookup and deduplicated concurrent creation", async () => {
+  const email = "member-" + unique + "@example.invalid"
+  const input = {
+    nome: "Sócio Exemplo", email, telefone: "+000000000",
+    observacoes: "Dados sintéticos", dataAdesao: "2026-10-25", numeroSocio: "SYN-01",
+  }
+  const responses = await Promise.all([
+    createSecureMember(db, input, "admin-fixture-1"),
+    createSecureMember(db, input, "admin-fixture-2"),
+  ])
+  assert.deepEqual(responses.map(x => x.status).sort(), ["created", "duplicate"])
+  const created = responses.find(x => x.status === "created")
+  assert.match(created.id, /^[a-f0-9-]{36}$/)
+  assert.notEqual(created.id, legacyMemberDocumentId(email))
+  const ref = db.collection("area_socios").doc(created.id)
+  const stored = (await ref.get()).data()
+  for (const term of [email, "Sócio Exemplo", "+000000000", "Dados sintéticos"])
+    assert.equal(JSON.stringify(stored).includes(term), false)
+  assert.equal(openMember(stored, ref.path).email, email)
+  assert.equal(stored.numeroSocio, "SYN-01")
+  const byIndex = await findMemberByEmail(db, email)
+  assert.equal(byIndex.id, created.id)
+  // Preserve foreign keys used by quotas and financial receipts.
+  const quota = db.collection("area_quota_obligations").doc(created.id + "_2026-10")
+  await quota.create(sealFinancialRecord({
+    socioId: created.id, socioNome: "Sócio Exemplo",
+    periodo: "2026-10", vencimento: "2026-10-31",
+    valorMinor: 900, moeda: "XOF",
+  }, quota.path, "quota"))
+  const receipt = db.collection("area_financial_transactions").doc("secure-pay" + unique)
+  await receipt.create(sealFinancialRecord({
+    tipo: "quota", socioId: created.id, obligationId: quota.id,
+    socioNome: "Sócio Exemplo", periodo: "2026-10",
+    valorMinor: 300, moeda: "XOF", data: "2026-10-25", metodo: "dinheiro",
+  }, receipt.path, "transaction"))
+  const matches = await db.collection("area_financial_transactions")
+    .where("socioId", "==", created.id).get()
+  assert.equal(matches.docs.some(d => d.id === receipt.id), true)
+  assert.equal((await db.collection("area_quota_obligations").doc(quota.id).get()).get("socioId"), created.id)
+})
+
+test("legacy member ID blocks duplicate UUID member and resolves by email", async () => {
+  const email = "legacy-" + unique + "@example.invalid"
+  const legacyRef = db.collection("area_socios").doc(legacyMemberDocumentId(email))
+  await legacyRef.create({
+    nome: "Registo Antigo", email, estado: "ativo", dataAdesao: "2025-01-01",
+  })
+  const found = await findMemberByEmail(db, email)
+  assert.equal(found.id, legacyRef.id)
+  const attempted = await createSecureMember(db, {
+    nome: "Registo duplicado", email, dataAdesao: "2026-10-25",
+  }, "admin-synthetic")
+  assert.equal(attempted.status, "duplicate")
+  assert.equal((await legacyRef.get()).get("nome"), "Registo Antigo")
 })
 
 test.after(async () => {

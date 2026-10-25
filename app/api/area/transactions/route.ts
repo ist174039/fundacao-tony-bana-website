@@ -74,6 +74,7 @@ export async function POST(request: Request) {
         const obligationRef = db.collection("area_quota_obligations").doc(obligationId)
         const obligation = await firestoreTransaction.get(obligationRef)
         if (!obligation.exists) throw new Error("QUOTA_NOT_FOUND")
+        if (obligation.get("privacidadeFormato") && !secureFinance) throw new Error("ENCRYPTION_REQUIRED")
         const receipts = await firestoreTransaction.get(db.collection(collectionName).where("obligationId", "==", obligationId))
         const alreadyPaid = receipts.docs.reduce((total, receipt) => total + normalizeStoredXofAmount(receipt.get("valorMinor"), receipt.get("moeda")), 0)
         const amount = normalizeStoredXofAmount(obligation.get("valorMinor"), obligation.get("moeda"))
@@ -91,6 +92,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, id: ref.id }, { status: 201 })
   } catch (error) {
     if (error instanceof Error && error.message === "QUOTA_NOT_FOUND") return NextResponse.json({ error: "Quota não encontrada." }, { status: 404 })
+    if (error instanceof Error && error.message === "ENCRYPTION_REQUIRED") return NextResponse.json({ error: "Cifragem financeira obrigatória para esta quota." }, { status: 503 })
     if (error instanceof Error && error.message === "PAYMENT_EXCEEDS_BALANCE") return NextResponse.json({ error: "O valor excede o saldo em dívida desta quota." }, { status: 409 })
     return NextResponse.json({ error: "Não foi possível registar o recebimento." }, { status: 500 })
   }

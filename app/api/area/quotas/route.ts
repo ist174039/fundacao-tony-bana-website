@@ -3,6 +3,7 @@ import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAccess
 import { normalizeStoredXofAmount } from "@/lib/area-currency"
 import { isFieldEncryptionConfigured } from "@/lib/server/field-encryption.mjs"
 import { sealFinancialRecord, openFinancialRecord } from "@/lib/server/financial-privacy.mjs"
+import { openMember } from "@/lib/server/member-registry.mjs"
 
 export const runtime = "nodejs"
 const obligationsCollection = "area_quota_obligations"
@@ -61,12 +62,14 @@ export async function POST(request: Request) {
     const socioRef = db.collection("area_socios").doc(socioId)
     const socio = await socioRef.get()
     if (!socio.exists) return NextResponse.json({ error: "Sócio não encontrado." }, { status: 404 })
+    if (socio.get("privacidadeFormato") && !secureFinance)
+      return NextResponse.json({ error: "Os dados deste sócio exigem cifragem financeira." }, { status: 503 })
     const obligationId = `${socioId}_${periodo}`
     const ref = db.collection(obligationsCollection).doc(obligationId)
     const prior = await ref.get()
     if (prior.exists) return NextResponse.json({ error: "Já existe uma quota para este sócio neste período." }, { status: 409 })
     if (socio.get("estado") !== "ativo") return NextResponse.json({ error: "Só é possível criar quotas para sócios ativos." }, { status: 400 })
-    const obligation = { socioId, socioNome: socio.get("nome"), periodo, vencimento, valorMinor, moeda: "XOF", createdBy: admin.uid, createdAt: new Date().toISOString() }
+    const obligation = { socioId, socioNome: openMember(socio.data()!, socioRef.path).nome, periodo, vencimento, valorMinor, moeda: "XOF", createdBy: admin.uid, createdAt: new Date().toISOString() }
     await ref.create(secureFinance ? sealFinancialRecord(obligation, ref.path, "quota") : obligation)
     return NextResponse.json({ success: true, id: obligationId }, { status: 201 })
   } catch (error) {
