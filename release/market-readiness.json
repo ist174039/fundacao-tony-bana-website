@@ -1,0 +1,203 @@
+{
+  "schema_version": "1.0",
+  "project": "Fundação Tony Bana",
+  "baseline_at": "2026-10-25",
+  "source_priority": [
+    "Notion Project Definition & Delivery",
+    "Notion operational tables",
+    "GitHub main",
+    "Complementary documentation"
+  ],
+  "baseline_main_sha": "1abf9afcfc7810daba8f1fab2bad0fc529aa8bbf",
+  "observed_production_sha": "97864406322e6e9e8ab4dcefc0283195b47797f1",
+  "policy": "no-go until all mandatory release gates have independently reviewed evidence for the release candidate",
+  "gates": [
+    {
+      "id": "G01",
+      "name": "Âmbito, requisitos e natureza jurídica aprovados",
+      "domain": "product",
+      "status": "blocked",
+      "requirements": [
+        "FTB-MEM-001",
+        "FTB-MEM-002",
+        "FTB-ALU-001"
+      ],
+      "reason": "31 of 46 requirements Por validar; statutory status of member dues unresolved",
+      "evidence_urls": [],
+      "verified_by": "",
+      "candidate_sha": "",
+      "environment": ""
+    },
+    {
+      "id": "G02",
+      "name": "Conteúdo institucional, marca e imagens aprovados",
+      "domain": "product",
+      "status": "pending",
+      "requirements": [],
+      "reason": "No evidenced sign-off for public copy, logos or image rights",
+      "evidence_urls": [],
+      "verified_by": "",
+      "candidate_sha": "",
+      "environment": ""
+    },
+    {
+      "id": "G03",
+      "name": "Autorização por perfil, escola, projeto e objeto validada",
+      "domain": "security",
+      "status": "blocked",
+      "requirements": [
+        "FTB-IAM-001"
+      ],
+      "reason": "No reviewed multi-role authenticated E2E test; school isolation not implemented",
+      "evidence_urls": [],
+      "verified_by": "",
+      "candidate_sha": "",
+      "environment": ""
+    },
+    {
+      "id": "G04",
+      "name": "Regras reais Firebase Firestore e Storage revistas",
+      "domain": "security",
+      "status": "blocked",
+      "requirements": [
+        "FTB-SEC-001",
+        "FTB-DOC-006"
+      ],
+      "reason": "Emulator deny-all rules are NOT the remote production rules",
+      "evidence_urls": [],
+      "verified_by": "",
+      "candidate_sha": "",
+      "environment": ""
+    },
+    {
+      "id": "G05",
+      "name": "Cifragem de PII configurada e legados migrados",
+      "domain": "privacy",
+      "status": "blocked",
+      "requirements": [
+        "FTB-SEC-001",
+        "FTB-SEC-002"
+      ],
+      "reason": "Encryption feature flags OFF by default; legacy PII still readable to application",
+      "evidence_urls": [],
+      "verified_by": "",
+      "candidate_sha": "",
+      "environment": ""
+    },
+    {
+      "id": "G06",
+      "name": "Finalidades, retenção, direitos e imagens de menores aprovados",
+      "domain": "privacy",
+      "status": "blocked",
+      "requirements": [
+        "FTB-DOC-004",
+        "FTB-ALU-001"
+      ],
+      "reason": "No independent legal basis, retention/AIPD triage, guardian consent assurance",
+      "evidence_urls": [],
+      "verified_by": "",
+      "candidate_sha": "",
+      "environment": ""
+    },
+    {
+      "id": "G07",
+      "name": "Testes funcionais ponta-a-ponta e acessibilidade aprovados",
+      "domain": "quality",
+      "status": "blocked",
+      "requirements": [],
+      "reason": "15 of 55 test cases have passing automated execution links; no accepted independent review",
+      "evidence_urls": [],
+      "verified_by": "",
+      "candidate_sha": "",
+      "environment": ""
+    },
+    {
+      "id": "G08",
+      "name": "Cadeia de rastreabilidade completa e validada",
+      "domain": "governance",
+      "status": "blocked",
+      "requirements": [],
+      "reason": "No fully accepted requirement-to-production evidence chain",
+      "evidence_urls": [],
+      "verified_by": "",
+      "candidate_sha": "",
+      "environment": ""
+    },
+    {
+      "id": "G09",
+      "name": "Restauro, RPO/RTO, gestão de incidentes ensaiados",
+      "domain": "operations",
+      "status": "blocked",
+      "requirements": [],
+      "reason": "No executed backup restore or incident-response evidence",
+      "evidence_urls": [],
+      "verified_by": "",
+      "candidate_sha": "",
+      "environment": ""
+    },
+    {
+      "id": "G10",
+      "name": "Contas, quotas, doações, fundos e stock conciliados",
+      "domain": "finance",
+      "status": "blocked",
+      "requirements": [
+        "FTB-DON-005",
+        "FTB-DON-006",
+        "FTB-MEM-002"
+      ],
+      "reason": "Monetary and material modules incomplete; finance acceptance and reversal workflows missing",
+      "evidence_urls": [],
+      "verified_by": "",
+      "candidate_sha": "",
+      "environment": ""
+    },
+    {
+      "id": "G11",
+      "name": "Deploy de produção corresponde ao SHA aprovado",
+      "domain": "delivery",
+      "status": "blocked",
+      "requirements": [],
+      "reason": "Observed Vercel production SHA behind main; no release approval",
+      "evidence_urls": [],
+      "verified_by": "",
+      "candidate_sha": "",
+      "environment": ""
+    },
+    {
+      "id": "G12",
+      "name": "Main protegida por revisão e checks obrigatórios",
+      "domain": "delivery",
+      "status": "blocked",
+      "requirements": [],
+      "reason": "GitHub main reported protected=false on 2026-10-25",
+      "evidence_urls": [],
+      "verified_by": "",
+      "candidate_sha": "",
+      "environment": ""
+    },
+    {
+      "id": "G13",
+      "name": "Suporte, monitorização e formação de operadores",
+      "domain": "operations",
+      "status": "pending",
+      "requirements": [],
+      "reason": "On-call roles, documentation and support runbook not accepted",
+      "evidence_urls": [],
+      "verified_by": "",
+      "candidate_sha": "",
+      "environment": ""
+    },
+    {
+      "id": "G14",
+      "name": "GO/NO-GO formal e evidência aceite por decisor",
+      "domain": "governance",
+      "status": "blocked",
+      "requirements": [],
+      "reason": "No human release decision or accepted evidence",
+      "evidence_urls": [],
+      "verified_by": "",
+      "candidate_sha": "",
+      "environment": ""
+    }
+  ]
+}

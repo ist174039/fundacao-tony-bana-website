@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "next lint",
     "test:security": "node --test tests/area-admin-policy.test.mjs tests/field-encryption.test.mjs tests/financial-privacy.test.mjs tests/material-reception.test.mjs tests/member-registry.test.mjs tests/membership-privacy.test.mjs tests/schools-validation.test.mjs",
-    "test:integration": "node --test tests/firestore-emulator.test.mjs"
+    "test:integration": "node --test tests/firestore-emulator.test.mjs",
+    "test:market": "node --test tests/market-readiness.test.mjs",
+    "audit:market": "node scripts/market-readiness.mjs --report-only",
+    "gate:market": "node scripts/market-readiness.mjs --enforce"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.3",
