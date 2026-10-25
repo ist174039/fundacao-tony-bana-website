@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useState, type FormEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -35,7 +35,7 @@ export function MaterialReceptionsManager() {
   const updateItem = (index: number, patch: Partial<Item>) =>
     setForm(prev => ({ ...prev, itens: prev.itens.map((item, i) => i === index ? { ...item, ...patch } : item) }))
 
-  const submit = async (event: React.FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault(); setBusy(true); setError(""); setMessage("")
     try {
       const result = await areaFetch<{ rececao: Reception }>("/api/area/material-receptions", {
