@@ -40,7 +40,8 @@ export async function POST(request: Request) {
       criadoEm: now, criadoPor: identity.uid, confirmadoEm: null, confirmadoPor: null,
     }
     await ref.create(data)
-    return NextResponse.json({ rececao: { id: ref.id, ...data } }, { status: 201 })
+    // Return the reference needed by the UI, never the persisted private record or ciphertext.
+    return NextResponse.json({ rececao: { id: ref.id, numero, estado: "pendente" } }, { status: 201 })
   } catch (error) {
     if (error instanceof MaterialReceptionError || error instanceof SyntaxError)
       return denied(400, error.message)
