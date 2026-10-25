@@ -8,9 +8,9 @@ import { randomBytes } from "node:crypto"
 import { initializeApp as initializeAdminApp, deleteApp as deleteAdminApp } from "firebase-admin/app"
 import { getFirestore as getAdminFirestore } from "firebase-admin/firestore"
 import { initializeApp as initializeClientApp, deleteApp as deleteClientApp } from "firebase/app"
-import { getFirestore as getClientFirestore, connectFirestoreEmulator, doc, getDoc, terminate } from "firebase/firestore"
+import { getFirestore as getClientFirestore, connectFirestoreEmulator, doc, getDoc, setDoc, terminate } from "firebase/firestore"
 import { encryptJson } from "../lib/server/field-encryption.mjs"
-import { sealMaterialReception, openMaterialReception } from "../lib/server/private-records.mjs"
+import { sealMaterialReception, openMaterialReception, sealSchool, openSchool, sealContact, openContact } from "../lib/server/private-records.mjs"
 import { confirmMaterialReceipt } from "../lib/server/material-stock.mjs"
 
 const host = process.env.FIRESTORE_EMULATOR_HOST
@@ -35,6 +35,31 @@ connectFirestoreEmulator(browserDb, "127.0.0.1", 8080)
 test("an unauthenticated Firebase client cannot read or write private records", async () => {
   const target = doc(browserDb, "area_material_receptions", "rececao" + unique)
   await assert.rejects(getDoc(target), (error) => error?.code === "permission-denied")
+  await assert.rejects(setDoc(target, { estado: "confirmada" }), (error) => error?.code === "permission-denied")
+})
+
+test("school and school-contact fields remain private in Firestore documents", async () => {
+  const school = db.collection("area_schools").doc("ESC" + unique)
+  await school.create({
+    ...sealSchool({
+      codigo: school.id, nome: "Escola de Teste", pais: "PT",
+      email: "school@example.invalid", telefone: "+0000", endereco: "Rua Sintética",
+    }, school.path),
+    estado: "ativa",
+  })
+  const raw = (await school.get()).data()
+  for (const secret of ["school@example.invalid", "+0000", "Rua Sintética"]) {
+    assert.equal(JSON.stringify(raw).includes(secret), false)
+  }
+  assert.equal(openSchool(raw, school.path).email, "school@example.invalid")
+  const contact = school.collection("contactos").doc("person" + unique)
+  await contact.create({
+    ...sealContact({ nome: "Responsável Sintético", cargo: "Direção", email: "teacher@example.invalid" }, contact.path),
+  })
+  const stored = (await contact.get()).data()
+  assert.equal(JSON.stringify(stored).includes("Responsável Sintético"), false)
+  assert.equal(openContact(stored, contact.path).nome, "Responsável Sintético")
+  assert.throws(() => openContact(stored, contact.path + "-other"))
 })
 
 test("physical material reception encrypts PII and creates stock exactly once", async () => {
