@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:security": "node --test tests/*.test.mjs",
+    "test:security": "node --test tests/area-admin-policy.test.mjs tests/field-encryption.test.mjs tests/material-reception.test.mjs tests/schools-validation.test.mjs",
     "test:integration": "node --test tests/firestore-emulator.test.mjs"
   },
   "dependencies": {
