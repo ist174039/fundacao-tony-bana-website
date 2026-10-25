@@ -8,7 +8,7 @@ import { randomBytes } from "node:crypto"
 import { initializeApp as initializeAdminApp, deleteApp as deleteAdminApp } from "firebase-admin/app"
 import { getFirestore as getAdminFirestore } from "firebase-admin/firestore"
 import { initializeApp as initializeClientApp, deleteApp as deleteClientApp } from "firebase/app"
-import { getFirestore as getClientFirestore, connectFirestoreEmulator, doc, getDoc } from "firebase/firestore"
+import { getFirestore as getClientFirestore, connectFirestoreEmulator, doc, getDoc, terminate } from "firebase/firestore"
 import { encryptJson } from "../lib/server/field-encryption.mjs"
 import { sealMaterialReception, openMaterialReception } from "../lib/server/private-records.mjs"
 import { confirmMaterialReceipt } from "../lib/server/material-stock.mjs"
@@ -103,7 +103,7 @@ test("invalid, absent or already confirmed receipts do not add stock", async () 
 })
 
 test.after(async () => {
-  await browserDb._terminate?.()
+  await terminate(browserDb)
   await deleteClientApp(browserApp)
   await deleteAdminApp(adminApp)
 })
