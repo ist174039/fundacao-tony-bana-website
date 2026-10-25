@@ -47,7 +47,7 @@ export async function POST(request: Request) {
   const admin = await requireAreaAdmin(request)
   if (!admin) return NextResponse.json({ error: "Sem autorização para criar quotas." }, { status: 403 })
   const secureFinance = process.env.FTB_ENCRYPT_FINANCIAL_PII === "true"
-  if (secureFinance && !isFieldEncryptionConfigured()) return NextResponse.json({ error: "Cifragem financeira indisponível." }, { status: 503 })
+  if (!secureFinance || !isFieldEncryptionConfigured()) return NextResponse.json({ error: "Cifragem financeira indisponível." }, { status: 503 })
   try {
     const body = await request.json()
     const socioId = typeof body.socioId === "string" ? body.socioId : ""
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     if (prior.exists) return NextResponse.json({ error: "Já existe uma quota para este sócio neste período." }, { status: 409 })
     if (socio.get("estado") !== "ativo") return NextResponse.json({ error: "Só é possível criar quotas para sócios ativos." }, { status: 400 })
     const obligation = { socioId, socioNome: openMember(socio.data()!, socioRef.path).nome, periodo, vencimento, valorMinor, moeda: "XOF", createdBy: admin.uid, createdAt: new Date().toISOString() }
-    await ref.create(secureFinance ? sealFinancialRecord(obligation, ref.path, "quota") : obligation)
+    await ref.create(sealFinancialRecord(obligation, ref.path, "quota"))
     return NextResponse.json({ success: true, id: obligationId }, { status: 201 })
   } catch (error) {
     if ((error as { code?: string | number })?.code === 6 || (error as { code?: string | number })?.code === "already-exists") {
