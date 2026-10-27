@@ -1,3 +1,5 @@
+import { getFirebaseAdminFirestore } from '@/lib/server/firebase-admin'
+import { writeExternalAudit } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from "next/server"
 import { getFirebaseAdminAuth, isFirebaseAdminConfigured, resolveAreaAccess } from "@/lib/server/firebase-admin"
 
@@ -23,7 +25,11 @@ export async function PATCH(request: Request) {
     const body = await request.json()
     const displayName = typeof body.displayName === "string" ? body.displayName.trim() : ""
     if (displayName.length < 2 || displayName.length > 100) return NextResponse.json({ error: "O nome deve ter entre 2 e 100 caracteres." }, { status: 400 })
+    const user=await getFirebaseAdminAuth().getUser(result.access.uid)
+    const path='firebase_auth/users/'+result.access.uid
+    await writeExternalAudit(getFirebaseAdminFirestore(),{module:'profile',action:'auth-update',recordPath:path,actorUid:result.access.uid,before:{displayName:user.displayName||''},after:{displayName},source:'auth-intent'})
     await getFirebaseAdminAuth().updateUser(result.access.uid, { displayName })
+    await writeExternalAudit(getFirebaseAdminFirestore(),{module:'profile',action:'auth-update',recordPath:path,actorUid:result.access.uid,before:{displayName:user.displayName||''},after:{displayName},source:'auth-completed'})
     return NextResponse.json({ success: true, displayName })
   } catch {
     return NextResponse.json({ error: "Não foi possível atualizar o perfil." }, { status: 500 })

@@ -1,3 +1,4 @@
+import { appendAuditEvent } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from 'next/server'
 import { getFirebaseAdminFirestore } from '@/lib/server/firebase-admin'
 import { resolveDocumentActor,documentFeatureReady,canOperateDocument,privateDocumentBucket } from '@/lib/server/document-service'
@@ -45,8 +46,12 @@ export async function POST(request:Request,{params}:{params:{id:string}}){
   const saved=await db.runTransaction(async tx=>{
    const current=await tx.get(ref)
    if(!current.exists||current.get('latestVersion')!==expected)return false
-   tx.create(ref.collection('versions').doc(String(expected+1).padStart(6,'0')),version)
-   tx.update(ref,{latestVersion:expected+1,updatedAt:stamp,updatedBy:actor.uid})
+   const versionRef=ref.collection('versions').doc(String(expected+1).padStart(6,'0'))
+   tx.create(versionRef,version)
+   appendAuditEvent(tx,db,{module:'document-versions',action:'create',recordPath:versionRef.path,actorUid:actor.uid,after:version,at:stamp})
+   const updated={latestVersion:expected+1,updatedAt:stamp,updatedBy:actor.uid}
+   tx.update(ref,updated)
+   appendAuditEvent(tx,db,{module:'documents',action:'update',recordPath:ref.path,actorUid:actor.uid,before:current.data(),after:{...current.data(),...updated},at:stamp})
    tx.create(audit,{kind:'document-version-uploaded',documentId:params.id,actorUid:actor.uid,at:stamp,version:expected+1})
    return true
   })

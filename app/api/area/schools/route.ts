@@ -1,4 +1,6 @@
+import { auditedCreate } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from "next/server"
+import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from "@/lib/server/firebase-admin"
 import { parseSchoolInput, SchoolValidationError } from "@/lib/server/schools-validation.mjs"
 import { isFieldEncryptionConfigured } from "@/lib/server/field-encryption.mjs"
@@ -12,6 +14,7 @@ function enabled() {
 }
 
 export async function GET(request: Request) {
+  if (!(await isOperationalModuleEnabled('schools'))) return NextResponse.json({ error: 'Módulo desativado na Configuração.' }, { status: 503 })
   if (!enabled()) return NextResponse.json({ error: "O módulo de escolas ainda não está ativo." }, { status: 503 })
   if (!isFirebaseAdminConfigured() || !isFieldEncryptionConfigured()) return NextResponse.json({ error: "Servidor ou cifragem de dados pessoais não configurados." }, { status: 503 })
   const admin = await requireAreaAdmin(request)
@@ -25,6 +28,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (!(await isOperationalModuleEnabled('schools'))) return NextResponse.json({ error: 'Módulo desativado na Configuração.' }, { status: 503 })
   if (!enabled()) return NextResponse.json({ error: "O módulo de escolas ainda não está ativo." }, { status: 503 })
   if (!isFirebaseAdminConfigured() || !isFieldEncryptionConfigured()) return NextResponse.json({ error: "Servidor ou cifragem de dados pessoais não configurados." }, { status: 503 })
   const admin = await requireAreaAdmin(request)
@@ -34,7 +38,7 @@ export async function POST(request: Request) {
     const { codigo, ...school } = body
     const ref = getFirebaseAdminFirestore().collection(collectionName).doc(codigo)
     const now = new Date().toISOString()
-    await ref.create({ ...sealSchool({ ...school, codigo }, ref.path), createdAt: now, updatedAt: now, createdBy: admin.uid, updatedBy: admin.uid })
+    await auditedCreate(ref,{ ...sealSchool({ ...school, codigo }, ref.path), createdAt: now, updatedAt: now, createdBy: admin.uid, updatedBy: admin.uid },{module:'schools',actorUid:admin.uid})
     return NextResponse.json({ escola: { id: codigo, ...school, codigo } }, { status: 201 })
   } catch (error) {
     if (error instanceof SchoolValidationError || error instanceof SyntaxError)

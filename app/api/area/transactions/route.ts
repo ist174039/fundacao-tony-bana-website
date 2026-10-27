@@ -1,3 +1,4 @@
+import { appendAuditEvent, auditedCreate } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from "next/server"
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAccess, requireAreaAdmin } from "@/lib/server/firebase-admin"
 import { normalizeStoredXofAmount } from "@/lib/area-currency"
@@ -83,12 +84,14 @@ export async function POST(request: Request) {
         transaction.socioId = obligation.get("socioId")
         transaction.socioNome = openFinancialRecord(obligation.data()!, obligationRef.path, "quota", { allowLegacy: true }).socioNome
         transaction.periodo = obligation.get("periodo")
-        firestoreTransaction.create(ref, secureFinance ? sealFinancialRecord(transaction, ref.path, "transaction") : transaction)
+        const saved = secureFinance ? sealFinancialRecord(transaction, ref.path, "transaction") : transaction
+        firestoreTransaction.create(ref, saved)
+        appendAuditEvent(firestoreTransaction,db,{module:'finance',action:'create',recordPath:ref.path,actorUid:admin.uid,after:saved})
       })
       return NextResponse.json({ success: true, id: ref.id }, { status: 201 })
     }
 
-    await ref.create(secureFinance ? sealFinancialRecord(transaction, ref.path, "transaction") : transaction)
+    await auditedCreate(ref,secureFinance ? sealFinancialRecord(transaction, ref.path, "transaction") : transaction,{module:'finance',actorUid:admin.uid})
     return NextResponse.json({ success: true, id: ref.id }, { status: 201 })
   } catch (error) {
     if (error instanceof Error && error.message === "QUOTA_NOT_FOUND") return NextResponse.json({ error: "Quota não encontrada." }, { status: 404 })

@@ -1,8 +1,8 @@
 "use client"
 
 import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, Timestamp } from "firebase/firestore"
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage"
-import { db, storage } from "./firebase"
+import { db } from "./firebase"
+import { areaFetch } from "./area-client"
 
 export interface Evento {
   id: string
@@ -183,77 +183,31 @@ export async function getDocument<T>(collectionName: string, id: string): Promis
 }
 
 // Add a new document
-export async function addDocument<T>(collectionName: string, data: Partial<T>): Promise<string> {
-  try {
-    const payload = sanitizeForFirestore(data)
-    const problems = findNonSerializableFields(payload)
-    if (problems.length > 0) {
-      console.error(`Payload contains non-serializable fields: ${problems.join(", ")}`)
-      throw new Error(`Payload contains non-serializable fields: ${problems.join(", ")}`)
-    }
-    const docRef = await addDoc(collection(db, collectionName), {
-      ...payload,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-    })
-    return docRef.id
-  } catch (error) {
-    console.error(`Error adding document to ${collectionName}:`, error)
-    throw error
-  }
+// All public-site content mutations now go through the authorised, transactional
+// server endpoint. Direct Firestore client writes would bypass the audit trail.
+export async function addDocument<T>(collectionName:string,data:Partial<T>):Promise<string>{
+ const payload=sanitizeForFirestore(data)
+ const result=await areaFetch<{id:string}>('/api/area/site-content',{method:'POST',body:JSON.stringify({collectionName,data:payload})})
+ return result.id
+}
+export async function updateDocument<T>(collectionName:string,id:string,data:Partial<T>):Promise<void>{
+ const payload=sanitizeForFirestore(data)
+ await areaFetch('/api/area/site-content',{method:'PATCH',body:JSON.stringify({collectionName,id,data:payload})})
+}
+export async function deleteDocument(collectionName:string,id:string):Promise<void>{
+ await areaFetch('/api/area/site-content',{method:'DELETE',body:JSON.stringify({collectionName,id})})
 }
 
-// Update a document
-export async function updateDocument<T>(collectionName: string, id: string, data: Partial<T>): Promise<void> {
-  try {
-    const payload = sanitizeForFirestore(data)
-    const problems = findNonSerializableFields(payload)
-    if (problems.length > 0) {
-      console.error(`Payload contains non-serializable fields: ${problems.join(", ")}`)
-      throw new Error(`Payload contains non-serializable fields: ${problems.join(", ")}`)
-    }
-    const docRef = doc(db, collectionName, id)
-    await updateDoc(docRef, {
-      ...payload,
-      updatedAt: Timestamp.now(),
-    })
-  } catch (error) {
-    console.error(`Error updating document ${id} in ${collectionName}:`, error)
-    throw error
-  }
-}
-
-// Delete a document
-export async function deleteDocument(collectionName: string, id: string): Promise<void> {
-  try {
-    const docRef = doc(db, collectionName, id)
-    await deleteDoc(docRef)
-  } catch (error) {
-    console.error(`Error deleting document ${id} from ${collectionName}:`, error)
-    throw error
-  }
-}
-
-// Upload an image to Firebase Storage
+// Media mutations are authenticated server operations with durable audit intent
+// and completion events; a direct client Storage write would bypass this trail.
 export async function uploadImage(file: File, path: string): Promise<string> {
-  try {
-    const storageRef = ref(storage, path)
-    await uploadBytes(storageRef, file)
-    const downloadURL = await getDownloadURL(storageRef)
-    return downloadURL
-  } catch (error) {
-    console.error("Error uploading image:", error)
-    throw error
-  }
+ const folder=path.split('/')[0]
+ const form=new FormData()
+ form.append('file',file)
+ form.append('folder',folder)
+ const response=await areaFetch<{url:string}>('/api/area/site-content/media',{method:'POST',body:form})
+ return response.url
 }
-
-// Delete an image from Firebase Storage
 export async function deleteImage(path: string): Promise<void> {
-  try {
-    const storageRef = ref(storage, path)
-    await deleteObject(storageRef)
-  } catch (error) {
-    console.error("Error deleting image:", error)
-    throw error
-  }
+ await areaFetch('/api/area/site-content/media',{method:'DELETE',body:JSON.stringify({path})})
 }

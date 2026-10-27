@@ -1,3 +1,4 @@
+import { auditedCreate } from '@/lib/server/audit-log.mjs'
 import { createHash } from "node:crypto"
 import { isFieldEncryptionConfigured } from "@/lib/server/field-encryption.mjs"
 import { createSecureMember, openMember, isMemberIndexConfigured } from "@/lib/server/member-registry.mjs"
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
     const prior = await ref.get()
     if (prior.exists) return NextResponse.json({ error: "Já existe um sócio com este email." }, { status: 409 })
     const socio = { nome, email, telefone, numeroSocio, observacoes, dataAdesao, estado: "ativo", createdBy: admin.uid, createdAt: new Date().toISOString() }
-    await ref.create(socio)
+    await auditedCreate(ref,socio,{module:'socios',actorUid:admin.uid})
     return NextResponse.json({ socio: { id, ...socio } }, { status: 201 })
   } catch (error) {
     if ((error as { code?: string | number })?.code === 6 || (error as { code?: string | number })?.code === "already-exists") {

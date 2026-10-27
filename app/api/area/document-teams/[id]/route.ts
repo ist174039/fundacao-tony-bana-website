@@ -1,3 +1,4 @@
+import { appendAuditEvent } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from 'next/server'
 import { getFirebaseAdminFirestore } from '@/lib/server/firebase-admin'
 import { resolveDocumentActor,documentFeatureReady,verifyMemberUids } from '@/lib/server/document-service'
@@ -19,7 +20,9 @@ export async function PATCH(request:Request,{params}:{params:{id:string}}){
    const doc=await tx.get(ref)
    if(!doc.exists)return 'missing'
    if(doc.get('revision')!==expectedRevision)return 'conflict'
-   tx.update(ref,{...team,revision:expectedRevision+1,updatedBy:actor.uid,updatedAt:new Date().toISOString()})
+   const updated={...team,revision:expectedRevision+1,updatedBy:actor.uid,updatedAt:new Date().toISOString()}
+   tx.update(ref,updated)
+   appendAuditEvent(tx,db,{module:'document-teams',action:'update',recordPath:ref.path,actorUid:actor.uid,before:doc.data(),after:{...doc.data(),...updated}})
    tx.create(audit,{kind:'team-members-updated',teamId:ref.id,actorUid:actor.uid,at:new Date().toISOString()})
    return 'updated'
   })

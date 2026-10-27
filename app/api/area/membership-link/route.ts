@@ -1,3 +1,4 @@
+import { appendAuditEvent } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from "next/server"
 import { createHash } from "node:crypto"
 import { getFirebaseAdminAuth, getFirebaseAdminFirestore, isFirebaseAdminConfigured } from "@/lib/server/firebase-admin"
@@ -32,7 +33,9 @@ export async function POST(request: Request) {
       if (ownLink.docs.some((doc) => doc.id !== socioRef.id)) return "other_link"
       if (socio.get("uid") === identity.uid) return "already_linked"
       if (socio.get("uid")) return "linked_elsewhere"
-      transaction.update(socioRef, { uid: identity.uid, accountLinkedAt: new Date().toISOString(), accountLinkedBy: "self" })
+      const updated={uid:identity.uid,accountLinkedAt:new Date().toISOString(),accountLinkedBy:"self"}
+      transaction.update(socioRef,updated)
+      appendAuditEvent(transaction,db,{module:'socios',action:'link',recordPath:socioRef.path,actorUid:identity.uid,before:socio.data(),after:{...socio.data(),...updated}})
       return "linked"
     })
 

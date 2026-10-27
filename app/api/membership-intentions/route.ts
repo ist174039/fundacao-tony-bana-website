@@ -1,3 +1,4 @@
+import { auditedCreate } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from "next/server"
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured } from "@/lib/server/firebase-admin"
 import { isFieldEncryptionConfigured } from "@/lib/server/field-encryption.mjs"
@@ -42,11 +43,12 @@ export async function POST(request: Request) {
     const collection = getFirebaseAdminFirestore().collection("area_membership_intentions")
     if (secureMode) {
       const ref = collection.doc()
-      await ref.create(sealMembershipIntention(payload, ref.path))
+      await auditedCreate(ref,sealMembershipIntention(payload, ref.path),{module:'membership-intentions',actorUid:'anonymous'})
     } else {
       // Historical behaviour retained until encryption keys and rollout flag are approved.
       // Do not enable for real personal data beyond the approved transition window.
-      await collection.add(payload)
+      const ref = collection.doc()
+      await auditedCreate(ref,payload,{module:'membership-intentions',actorUid:'anonymous'})
     }
     return NextResponse.json({ ok: true }, { status: 201 })
   } catch {

@@ -1,4 +1,6 @@
+import { auditedCreate } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from "next/server"
+import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from "@/lib/server/firebase-admin"
 import { isSchoolCode, parseSchoolContactInput, SchoolValidationError } from "@/lib/server/schools-validation.mjs"
 import { isFieldEncryptionConfigured } from "@/lib/server/field-encryption.mjs"
@@ -17,6 +19,7 @@ async function checkedContext(request: Request, code: string) {
 }
 
 export async function GET(request: Request, { params }: { params: { code: string } }) {
+  if (!(await isOperationalModuleEnabled('schools'))) return NextResponse.json({ error: 'Módulo desativado na Configuração.' }, { status: 503 })
   const context = await checkedContext(request, params.code?.toUpperCase())
   if (!context.school) return NextResponse.json({ error: context.error }, { status: context.status })
   try {
@@ -28,13 +31,14 @@ export async function GET(request: Request, { params }: { params: { code: string
 }
 
 export async function POST(request: Request, { params }: { params: { code: string } }) {
+  if (!(await isOperationalModuleEnabled('schools'))) return NextResponse.json({ error: 'Módulo desativado na Configuração.' }, { status: 503 })
   const context = await checkedContext(request, params.code?.toUpperCase())
   if (!context.school || !context.admin) return NextResponse.json({ error: context.error }, { status: context.status })
   try {
     const input = parseSchoolContactInput(await request.json())
     const now = new Date().toISOString()
     const ref = context.school.collection("contactos").doc()
-    await ref.create({ ...sealContact(input, ref.path), createdBy: context.admin.uid, createdAt: now })
+    await auditedCreate(ref,{ ...sealContact(input, ref.path), createdBy: context.admin.uid, createdAt: now },{module:'school-contacts',actorUid:context.admin.uid})
     return NextResponse.json({ contacto: { id: ref.id, ...input } }, { status: 201 })
   } catch (error) {
     if (error instanceof SchoolValidationError || error instanceof SyntaxError)

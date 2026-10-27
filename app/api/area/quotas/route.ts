@@ -1,3 +1,4 @@
+import { auditedCreate } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from "next/server"
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAccess, requireAreaAdmin } from "@/lib/server/firebase-admin"
 import { normalizeStoredXofAmount } from "@/lib/area-currency"
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
     if (prior.exists) return NextResponse.json({ error: "Já existe uma quota para este sócio neste período." }, { status: 409 })
     if (socio.get("estado") !== "ativo") return NextResponse.json({ error: "Só é possível criar quotas para sócios ativos." }, { status: 400 })
     const obligation = { socioId, socioNome: openMember(socio.data()!, socioRef.path).nome, periodo, vencimento, valorMinor, moeda: "XOF", createdBy: admin.uid, createdAt: new Date().toISOString() }
-    await ref.create(secureFinance ? sealFinancialRecord(obligation, ref.path, "quota") : obligation)
+    await auditedCreate(ref,secureFinance ? sealFinancialRecord(obligation, ref.path, "quota") : obligation,{module:'quotas',actorUid:admin.uid})
     return NextResponse.json({ success: true, id: obligationId }, { status: 201 })
   } catch (error) {
     if ((error as { code?: string | number })?.code === 6 || (error as { code?: string | number })?.code === "already-exists") {

@@ -8,7 +8,7 @@ export async function areaFetch<T>(path: string, init: RequestInit = {}): Promis
   const response = await fetch(path, {
     ...init,
     headers: {
-      "Content-Type": "application/json",
+      ...(init.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
       Authorization: `Bearer ${token}`,
       ...init.headers,
     },

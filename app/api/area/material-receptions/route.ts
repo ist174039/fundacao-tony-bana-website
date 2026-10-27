@@ -1,4 +1,6 @@
+import { auditedCreate } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from "next/server"
+import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from "@/lib/server/firebase-admin"
 import { MaterialReceptionError, parseMaterialReception } from "@/lib/server/material-reception.mjs"
 import { isFieldEncryptionConfigured } from "@/lib/server/field-encryption.mjs"
@@ -12,6 +14,7 @@ function denied(status: number, message: string) {
 }
 
 export async function GET(request: Request) {
+  if (!(await isOperationalModuleEnabled('material'))) return NextResponse.json({ error: 'Módulo desativado na Configuração.' }, { status: 503 })
   if (!active()) return denied(503, "A receção de material ainda não está ativa.")
   if (!isFirebaseAdminConfigured() || !isFieldEncryptionConfigured()) return denied(503, "Serviço ou cifragem indisponíveis.")
   const identity = await requireAreaAdmin(request)
@@ -26,6 +29,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (!(await isOperationalModuleEnabled('material'))) return NextResponse.json({ error: 'Módulo desativado na Configuração.' }, { status: 503 })
   if (!active()) return denied(503, "A receção de material ainda não está ativa.")
   if (!isFirebaseAdminConfigured() || !isFieldEncryptionConfigured()) return denied(503, "Serviço ou cifragem indisponíveis.")
   const identity = await requireAreaAdmin(request)
@@ -39,7 +43,7 @@ export async function POST(request: Request) {
       ...sealMaterialReception(input, ref.path), numero, estado: "pendente",
       criadoEm: now, criadoPor: identity.uid, confirmadoEm: null, confirmadoPor: null,
     }
-    await ref.create(data)
+    await auditedCreate(ref,data,{module:'material-receptions',actorUid:identity.uid})
     return NextResponse.json({ rececao: { id: ref.id, ...data } }, { status: 201 })
   } catch (error) {
     if (error instanceof MaterialReceptionError || error instanceof SyntaxError)
