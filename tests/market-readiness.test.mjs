@@ -1,7 +1,7 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
-import { assessRelease, REQUIRED_GATES } from "../scripts/market-readiness.mjs"
+import { assessRelease, readArgs, REQUIRED_GATES } from "../scripts/market-readiness.mjs"
 
 const baseline = JSON.parse(readFileSync("release/market-readiness.json", "utf8"))
 const sha = "a".repeat(40)
@@ -60,4 +60,23 @@ test("all independently attested gates are eligible for human GO decision only",
   assert.equal(result.progress, 100)
   assert.deepEqual(result.blockers, [])
   // The program does NOT deploy, flip secrets, or assert a human decision happened.
+})
+
+test("enforced readiness CLI requires both explicit 40-character SHAs", () => {
+  assert.throws(() => readArgs(["--enforce"]), /requires explicit/)
+  assert.throws(() => readArgs(["--enforce", "--sha", sha]), /requires explicit/)
+  assert.throws(() => readArgs(["--enforce", "--production-sha", sha]), /requires explicit/)
+  assert.throws(() => readArgs(["--enforce", "--sha", sha, "--production-sha"]), /requires explicit/)
+  assert.throws(() => readArgs(["--enforce", "--sha", "invalid", "--production-sha", sha]), /requires explicit/)
+  assert.deepEqual(
+    [readArgs(["--enforce", "--sha", sha, "--production-sha", otherSha]).candidateSha,
+      readArgs(["--enforce", "--sha", sha, "--production-sha", otherSha]).productionSha],
+    [sha, otherSha],
+  )
+})
+
+test("report-only CLI stays diagnostic even without explicit release SHAs", () => {
+  const args = readArgs(["--report-only"])
+  assert.equal(args.enforce, false)
+  assert.equal(args.productionSha, "")
 })
