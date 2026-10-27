@@ -1,3 +1,4 @@
+import { auditedCreate } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from 'next/server'
 import { getFirebaseAdminFirestore } from '@/lib/server/firebase-admin'
 import { resolveDocumentActor,documentFeatureReady,verifyMemberUids } from '@/lib/server/document-service'
@@ -23,7 +24,7 @@ export async function POST(request:Request){
   await verifyMemberUids(input.memberUids)
   const ref=getFirebaseAdminFirestore().collection('area_doc_teams').doc()
   const now=new Date().toISOString()
-  await ref.create({...input,revision:1,createdAt:now,createdBy:actor.uid,updatedAt:now,updatedBy:actor.uid})
+  await auditedCreate(ref,{...input,revision:1,createdAt:now,createdBy:actor.uid,updatedAt:now,updatedBy:actor.uid},{module:'document-teams',actorUid:actor.uid})
   return NextResponse.json({team:{id:ref.id,...input,revision:1}},{status:201})
  }catch(error){
   if(error instanceof DocumentWorkspaceError||error instanceof SyntaxError)return NextResponse.json({error:error.message},{status:400})

@@ -1,3 +1,4 @@
+import { auditedCreate } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from "next/server"
 import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from "@/lib/server/firebase-admin"
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
       ...sealMaterialReception(input, ref.path), numero, estado: "pendente",
       criadoEm: now, criadoPor: identity.uid, confirmadoEm: null, confirmadoPor: null,
     }
-    await ref.create(data)
+    await auditedCreate(ref,data,{module:'material-receptions',actorUid:identity.uid})
     return NextResponse.json({ rececao: { id: ref.id, ...data } }, { status: 201 })
   } catch (error) {
     if (error instanceof MaterialReceptionError || error instanceof SyntaxError)

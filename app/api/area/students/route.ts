@@ -1,3 +1,4 @@
+import { auditedCreate } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from 'next/server'
 import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from '@/lib/server/firebase-admin'
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
     const id = studentDocumentId(data.escolaCodigo, data.codigoInterno)
     const ref = db.collection('area_students').doc(id)
     const now = new Date().toISOString()
-    await ref.create({ ...sealStudent(data, ref.path), createdAt: now, updatedAt: now, createdBy: admin.uid, updatedBy: admin.uid })
+    await auditedCreate(ref,{ ...sealStudent(data, ref.path), createdAt: now, updatedAt: now, createdBy: admin.uid, updatedBy: admin.uid },{module:'students',actorUid:admin.uid})
     return NextResponse.json({ aluno: { id, escolaCodigo: data.escolaCodigo, codigoInterno: data.codigoInterno } }, { status: 201 })
   } catch (error) {
     if (error instanceof StudentInputError || error instanceof SyntaxError) return fail(error.message, 400)

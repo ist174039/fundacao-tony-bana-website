@@ -1,3 +1,4 @@
+import { auditedCreate } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from 'next/server'
 import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from '@/lib/server/firebase-admin'
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
       return fail('Stock disponível insuficiente para preparar a entrega.',409)
     const ref=db.collection('area_material_deliveries').doc(), stamp=new Date().toISOString()
     const numero=`ENT-${stamp.slice(0,10).replace(/-/g,'')}-${ref.id.slice(0,8).toUpperCase()}`
-    await ref.create({...sealDelivery(input,ref.path),numero,estado:'pendente',criadoEm:stamp,criadoPor:actor.uid,entregueEm:null,confirmadoPor:null})
+    await auditedCreate(ref,{...sealDelivery(input,ref.path),numero,estado:'pendente',criadoEm:stamp,criadoPor:actor.uid,entregueEm:null,confirmadoPor:null},{module:'material-deliveries',actorUid:actor.uid})
     return NextResponse.json({entrega:{id:ref.id,numero,estado:'pendente'}},{status:201})
   } catch(error) {
     if(error instanceof MaterialDeliveryError || error instanceof SyntaxError) return fail(error.message,400)

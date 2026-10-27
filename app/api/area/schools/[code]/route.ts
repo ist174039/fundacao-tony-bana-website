@@ -1,3 +1,4 @@
+import { auditedUpdate } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from "next/server"
 import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from "@/lib/server/firebase-admin"
@@ -23,7 +24,7 @@ export async function PATCH(request: Request, { params }: { params: { code: stri
     const ref = getFirebaseAdminFirestore().collection("area_schools").doc(code)
     const prior = await ref.get()
     if (!prior.exists) return NextResponse.json({ error: "Escola não encontrada." }, { status: 404 })
-    await ref.update({ ...patchSchool(changes, prior.data(), ref.path), updatedBy: admin.uid, updatedAt: new Date().toISOString() })
+    await auditedUpdate(ref,{ ...patchSchool(changes, prior.data(), ref.path), updatedBy: admin.uid, updatedAt: new Date().toISOString() },{module:'schools',actorUid:admin.uid})
     return NextResponse.json({ success: true, id: code })
   } catch (error) {
     if (error instanceof SchoolValidationError || error instanceof SyntaxError)

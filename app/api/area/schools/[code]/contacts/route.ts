@@ -1,3 +1,4 @@
+import { auditedCreate } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from "next/server"
 import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from "@/lib/server/firebase-admin"
@@ -37,7 +38,7 @@ export async function POST(request: Request, { params }: { params: { code: strin
     const input = parseSchoolContactInput(await request.json())
     const now = new Date().toISOString()
     const ref = context.school.collection("contactos").doc()
-    await ref.create({ ...sealContact(input, ref.path), createdBy: context.admin.uid, createdAt: now })
+    await auditedCreate(ref,{ ...sealContact(input, ref.path), createdBy: context.admin.uid, createdAt: now },{module:'school-contacts',actorUid:context.admin.uid})
     return NextResponse.json({ contacto: { id: ref.id, ...input } }, { status: 201 })
   } catch (error) {
     if (error instanceof SchoolValidationError || error instanceof SyntaxError)

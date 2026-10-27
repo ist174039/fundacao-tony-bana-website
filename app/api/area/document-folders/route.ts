@@ -1,3 +1,4 @@
+import { auditedCreate } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from 'next/server'
 import { getFirebaseAdminFirestore } from '@/lib/server/firebase-admin'
 import { resolveDocumentActor,documentFeatureReady,canReadTeam,canWriteTeam } from '@/lib/server/document-service'
@@ -26,7 +27,7 @@ export async function POST(request:Request){
    if(!parent.exists||parent.get('teamId')!==input.teamId)return NextResponse.json({error:'Pasta de origem inválida.'},{status:422})
   }
   const ref=db.collection('area_doc_folders').doc(),now=new Date().toISOString()
-  await ref.create({...input,createdAt:now,createdBy:actor.uid})
+  await auditedCreate(ref,{...input,createdAt:now,createdBy:actor.uid},{module:'document-folders',actorUid:actor.uid})
   return NextResponse.json({folder:{id:ref.id,...input}},{status:201})
  }catch(e){if(e instanceof DocumentWorkspaceError||e instanceof SyntaxError)return NextResponse.json({error:e.message},{status:400});return NextResponse.json({error:'Não foi possível criar pasta.'},{status:500})}
 }
