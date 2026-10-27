@@ -1,8 +1,7 @@
 "use client"
 
 import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, Timestamp } from "firebase/firestore"
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage"
-import { db, storage } from "./firebase"
+import { db } from "./firebase"
 import { areaFetch } from "./area-client"
 
 export interface Evento {
@@ -199,26 +198,16 @@ export async function deleteDocument(collectionName:string,id:string):Promise<vo
  await areaFetch('/api/area/site-content',{method:'DELETE',body:JSON.stringify({collectionName,id})})
 }
 
-// Upload an image to Firebase Storage
+// Media mutations are authenticated server operations with durable audit intent
+// and completion events; a direct client Storage write would bypass this trail.
 export async function uploadImage(file: File, path: string): Promise<string> {
-  try {
-    const storageRef = ref(storage, path)
-    await uploadBytes(storageRef, file)
-    const downloadURL = await getDownloadURL(storageRef)
-    return downloadURL
-  } catch (error) {
-    console.error("Error uploading image:", error)
-    throw error
-  }
+ const folder=path.split('/')[0]
+ const form=new FormData()
+ form.append('file',file)
+ form.append('folder',folder)
+ const response=await areaFetch<{url:string}>('/api/area/site-content/media',{method:'POST',body:form})
+ return response.url
 }
-
-// Delete an image from Firebase Storage
 export async function deleteImage(path: string): Promise<void> {
-  try {
-    const storageRef = ref(storage, path)
-    await deleteObject(storageRef)
-  } catch (error) {
-    console.error("Error deleting image:", error)
-    throw error
-  }
+ await areaFetch('/api/area/site-content/media',{method:'DELETE',body:JSON.stringify({path})})
 }
