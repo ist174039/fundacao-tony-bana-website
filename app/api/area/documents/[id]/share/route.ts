@@ -1,3 +1,4 @@
+import { appendAuditEvent } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from 'next/server'
 import { getFirebaseAdminFirestore } from '@/lib/server/firebase-admin'
 import { resolveDocumentActor,documentFeatureReady,verifyMemberUids } from '@/lib/server/document-service'
@@ -23,7 +24,9 @@ export async function PUT(request:Request,{params}:{params:{id:string}}){
   const changed=await db.runTransaction(async tx=>{
    const current=await tx.get(ref)
    if(!current.exists||Number(current.get('revision')||0)!==raw.expectedRevision)return false
-   tx.update(ref,{acl,revision:raw.expectedRevision+1,updatedAt:new Date().toISOString(),updatedBy:actor.uid})
+   const updated={acl,revision:raw.expectedRevision+1,updatedAt:new Date().toISOString(),updatedBy:actor.uid}
+   tx.update(ref,updated)
+   appendAuditEvent(tx,db,{module:'documents',action:'share',recordPath:ref.path,actorUid:actor.uid,before:current.data(),after:{...current.data(),...updated}})
    tx.create(audit,{kind:'document-sharing-updated',documentId:ref.id,actorUid:actor.uid,at:new Date().toISOString(),revision:raw.expectedRevision+1})
    return true
   })

@@ -1,3 +1,4 @@
+import { appendAuditEvent } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from 'next/server'
 import { getFirebaseAdminFirestore } from '@/lib/server/firebase-admin'
 import { resolveDocumentActor,documentFeatureReady,canWriteTeam,canOperateDocument,documentView,privateDocumentBucket } from '@/lib/server/document-service'
@@ -41,7 +42,10 @@ export async function POST(request:Request){
   const audit=db.collection('area_doc_audit').doc()
   await db.runTransaction(async tx=>{
    tx.create(ref,doc)
-   tx.create(ref.collection('versions').doc('000001'),version)
+   appendAuditEvent(tx,db,{module:'documents',action:'create',recordPath:ref.path,actorUid:actor.uid,after:doc,at:stamp})
+   const versionRef=ref.collection('versions').doc('000001')
+   tx.create(versionRef,version)
+   appendAuditEvent(tx,db,{module:'document-versions',action:'create',recordPath:versionRef.path,actorUid:actor.uid,after:version,at:stamp})
    tx.create(audit,{kind:'document-created',documentId:ref.id,actorUid:actor.uid,at:stamp,version:1})
   })
   uploaded=false

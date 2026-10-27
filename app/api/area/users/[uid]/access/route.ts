@@ -1,3 +1,4 @@
+import { appendAuditEvent } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from 'next/server'
 import { getFirebaseAdminAuth, getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from '@/lib/server/firebase-admin'
 import { isSchoolCode } from '@/lib/server/schools-validation.mjs'
@@ -66,6 +67,7 @@ export async function PUT(request: Request, { params }: { params: { uid: string 
       tx.set(ref, { ...access, revision: next, updatedAt: changedAt, updatedBy: ctx.admin.uid })
       tx.create(event, { type: 'user-access-changed', targetUid: params.uid,
         actorUid: ctx.admin.uid, previousRevision: revision, revision: next, at: changedAt })
+      appendAuditEvent(tx,db,{module:'user-permissions',action:current.exists?'update':'create',recordPath:ref.path,actorUid:ctx.admin.uid,before:current.exists?current.data():null,after:{...access,revision:next,updatedAt:changedAt,updatedBy:ctx.admin.uid},at:changedAt})
       return next
     })
     if (result === 'conflict') return reply('As permissões foram alteradas por outra pessoa. Atualiza e tenta novamente.', 409)
