@@ -1,4 +1,5 @@
 import 'server-only'
+import { appendAuditEvent } from '@/lib/server/audit-log.mjs'
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured } from '@/lib/server/firebase-admin'
 import { isFieldEncryptionConfigured } from '@/lib/server/field-encryption.mjs'
 import { isStudentIndexConfigured } from '@/lib/server/student-private.mjs'
@@ -80,6 +81,7 @@ export async function updateOperationalModule(input: { moduleId: ModuleId; enabl
     tx.set(ref, { enabled: input.enabled, revision: nextRevision, updatedAt: now, updatedBy: actorUid })
     tx.create(audit, { moduleId: input.moduleId, previousEnabled: currentEnabled, enabled: input.enabled,
       previousRevision: revision, revision: nextRevision, actorUid, at: now })
+    appendAuditEvent(tx,db,{module:'configuration',action:input.enabled?'activate':'deactivate',recordPath:ref.path,actorUid,before:{enabled:currentEnabled,revision},after:{enabled:input.enabled,revision:nextRevision},at:now})
     return { result: 'updated' as const, revision: nextRevision }
   })
 }
