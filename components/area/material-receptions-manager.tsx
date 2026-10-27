@@ -1,132 +1,53 @@
-"use client"
-import { useEffect, useState, type FormEvent } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { areaFetch } from "@/lib/area-client"
-
-type Item = { categoria: string; descricao: string; quantidade: number; unidade: string; estado: string }
-type Reception = {
-  id: string; numero: string; estado: "pendente" | "confirmada";
-  doador: { nome: string }; referenciaDocumento: string; itens: Item[]
-}
-const newItem = (): Item => ({ categoria: "", descricao: "", quantidade: 1, unidade: "un", estado: "novo" })
-const newForm = () => ({
-  anonimo: false, tipoDoador: "pessoa", nomeDoador: "", emailDoador: "",
-  telefoneDoador: "", referenciaDocumento: "", finalidade: "",
-  itens: [newItem()]
-})
-
-export function MaterialReceptionsManager() {
-  const [form, setForm] = useState(newForm)
-  const [rows, setRows] = useState<Reception[]>([])
-  const [busy, setBusy] = useState(false)
-  const [message, setMessage] = useState("")
-  const [error, setError] = useState("")
-
-  async function load() {
-    try {
-      const data = await areaFetch<{ rececoes: Reception[] }>("/api/area/material-receptions")
-      setRows(data.rececoes); setError("")
-    } catch (e) { setError(e instanceof Error ? e.message : "Não foi possível carregar as receções.") }
-  }
-  useEffect(() => { void load() }, [])
-
-  const updateItem = (index: number, patch: Partial<Item>) =>
-    setForm(prev => ({ ...prev, itens: prev.itens.map((item, i) => i === index ? { ...item, ...patch } : item) }))
-
-  const submit = async (event: FormEvent) => {
-    event.preventDefault(); setBusy(true); setError(""); setMessage("")
-    try {
-      const result = await areaFetch<{ rececao: Reception }>("/api/area/material-receptions", {
-        method: "POST", body: JSON.stringify(form)
-      })
-      setForm(newForm()); await load()
-      setMessage("Registo " + result.rececao.numero + " criado. Ainda não está em stock: confirmar a receção física.")
-    } catch (e) { setError(e instanceof Error ? e.message : "Não foi possível guardar.") }
-    finally { setBusy(false) }
-  }
-  const confirm = async (row: Reception) => {
-    if (!window.confirm("Confirma que os artigos da guia " + row.numero + " foram conferidos fisicamente? Esta confirmação gera entrada em stock.")) return
-    setBusy(true); setError(""); setMessage("")
-    try {
-      const result = await areaFetch<{ novaConfirmacao: boolean }>(
-        "/api/area/material-receptions/" + encodeURIComponent(row.id) + "/confirm", { method: "POST" })
-      await load()
-      setMessage(result.novaConfirmacao ? "Receção confirmada e stock atualizado." : "Receção anteriormente confirmada.")
-    } catch (e) { setError(e instanceof Error ? e.message : "Falha ao confirmar.") }
-    finally { setBusy(false) }
-  }
-
-  return <div className="space-y-6">
-    <p className="rounded-md border bg-muted/40 p-3 text-sm">
-      Registo de doação material → conferência física → confirmação → entrada em stock.
-      A guia física pode ser referenciada. Fotografias digitais permanecem desativadas até ser aprovado o armazenamento privado.
-    </p>
-    {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-    {message && <p role="status" className="text-sm">{message}</p>}
-    <Card><CardHeader><CardTitle>Registar doação material</CardTitle></CardHeader><CardContent>
-      <form onSubmit={submit} className="space-y-4">
-        <label className="flex gap-2 text-sm"><input type="checkbox" checked={form.anonimo} disabled={busy}
-          onChange={e => setForm(p => ({ ...p, anonimo: e.target.checked }))}/> Donativo anónimo</label>
-        {!form.anonimo && <div className="grid gap-3 sm:grid-cols-2">
-          <label className="text-sm">Tipo de doador
-            <select className="block w-full rounded-md border bg-background p-2" value={form.tipoDoador}
-              onChange={e => setForm(p => ({ ...p, tipoDoador: e.target.value }))}>
-              <option value="pessoa">Pessoa</option><option value="organizacao">Organização</option>
-            </select>
-          </label>
-          <label className="text-sm">Nome<Input required value={form.nomeDoador} disabled={busy}
-            onChange={e => setForm(p => ({ ...p, nomeDoador: e.target.value }))}/></label>
-          <label className="text-sm">Email<Input type="email" value={form.emailDoador} disabled={busy}
-            onChange={e => setForm(p => ({ ...p, emailDoador: e.target.value }))}/></label>
-          <label className="text-sm">Telefone<Input value={form.telefoneDoador} disabled={busy}
-            onChange={e => setForm(p => ({ ...p, telefoneDoador: e.target.value }))}/></label>
-        </div>}
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="text-sm">Número da guia / comprovativo físico<Input value={form.referenciaDocumento} disabled={busy}
-            onChange={e => setForm(p => ({ ...p, referenciaDocumento: e.target.value }))}/></label>
-          <label className="text-sm">Finalidade<Input value={form.finalidade} disabled={busy}
-            onChange={e => setForm(p => ({ ...p, finalidade: e.target.value }))}/></label>
-        </div>
-        <h4 className="font-semibold">Artigos</h4>
-        {form.itens.map((item, i) => <div key={i} className="grid gap-2 rounded-md border p-3 lg:grid-cols-5">
-          <label className="text-xs">Categoria<Input required value={item.categoria} disabled={busy}
-            onChange={e => updateItem(i, { categoria: e.target.value })}/></label>
-          <label className="text-xs">Descrição<Input required value={item.descricao} disabled={busy}
-            onChange={e => updateItem(i, { descricao: e.target.value })}/></label>
-          <label className="text-xs">Quantidade<Input type="number" required min="0.001" max="1000000" step="0.001" value={item.quantidade} disabled={busy}
-            onChange={e => updateItem(i, { quantidade: Number(e.target.value) })}/></label>
-          <label className="text-xs">Unidade<select className="block w-full rounded-md border bg-background p-2" value={item.unidade} disabled={busy}
-            onChange={e => updateItem(i, { unidade: e.target.value })}>
-            {["un", "kg", "l", "caixa", "pacote", "m", "outro"].map(v => <option key={v}>{v}</option>)}
-          </select></label>
-          <label className="text-xs">Condição<select className="block w-full rounded-md border bg-background p-2" value={item.estado} disabled={busy}
-            onChange={e => updateItem(i, { estado: e.target.value })}>
-            <option value="novo">Novo</option><option value="usado_bom">Usado / bom</option>
-            <option value="usado_rever">Usado / rever</option>
-          </select></label>
-          {form.itens.length > 1 && <Button type="button" variant="outline" disabled={busy}
-            onClick={() => setForm(p => ({ ...p, itens: p.itens.filter((_, j) => i !== j) }))}>Remover</Button>}
-        </div>)}
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" type="button" disabled={busy || form.itens.length >= 50}
-            onClick={() => setForm(p => ({ ...p, itens: [...p.itens, newItem()] }))}>Adicionar artigo</Button>
-          <Button type="submit" disabled={busy}>Registar como pendente</Button>
-        </div>
-      </form>
+'use client'
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
+import { Eye, PackageCheck, Plus } from 'lucide-react'
+import { areaFetch } from '@/lib/area-client'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { RecordListControls } from '@/components/workspace/record-list-controls'
+type Item = { categoria:string; descricao:string; quantidade:number; unidade:string; estado:string }
+type Reception = { id:string;numero:string;estado:'pendente'|'confirmada';criadoEm?:string;confirmadoEm?:string;doador:{nome:string;anonimo:boolean};referenciaDocumento:string;finalidade?:string;itens:Item[] }
+type ReceptionForm = { anonimo:boolean; tipoDoador:string; nomeDoador:string; emailDoador:string;telefoneDoador:string;referenciaDocumento:string;finalidade:string;itens:Item[] }
+const newItem=():Item=>({categoria:'',descricao:'',quantidade:1,unidade:'un',estado:'novo'})
+const newForm=():ReceptionForm=>({anonimo:false,tipoDoador:'pessoa',nomeDoador:'',emailDoador:'',telefoneDoador:'',referenciaDocumento:'',finalidade:'',itens:[newItem()]})
+const PAGE_SIZE=10
+export function MaterialReceptionsManager(){
+  const [rows,setRows]=useState<Reception[]>([]),[search,setSearch]=useState(''),[filter,setFilter]=useState('all'),[sort,setSort]=useState('date_desc'),[page,setPage]=useState(1)
+  const [mode,setMode]=useState<'new'|'view'|null>(null),[selected,setSelected]=useState<Reception|null>(null),[form,setForm]=useState<ReceptionForm>(newForm())
+  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('')
+  const refresh=useCallback(async()=>{const r=await areaFetch<{rececoes:Reception[]}>('/api/area/material-receptions');setRows(r.rececoes)},[])
+  useEffect(()=>{void refresh().catch(e=>setError(e instanceof Error?e.message:'Não foi possível consultar as receções.'))},[refresh])
+  const filtered=useMemo(()=>rows.filter(r=>`${r.numero} ${r.doador?.nome||''} ${r.referenciaDocumento||''} ${r.finalidade||''}`.toLocaleLowerCase('pt-PT').includes(search.toLocaleLowerCase('pt-PT'))&&(filter==='all'||r.estado===filter)).sort((a,b)=>{
+    const key=sort==='number_asc'?'numero':'criadoEm';const direction=sort==='date_desc'?-1:1;return direction*String(a[key]||'').localeCompare(String(b[key]||''),'pt-PT')
+  }),[rows,search,filter,sort])
+  const pages=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE)),shown=filtered.slice((Math.min(page,pages)-1)*PAGE_SIZE,Math.min(page,pages)*PAGE_SIZE)
+  const close=()=>{setMode(null);setSelected(null);setError('')}
+  const startNew=()=>{setForm(newForm());setMode('new');setSelected(null);setError('');setNotice('')}
+  const updateItem=(index:number,patch:Partial<Item>)=>setForm(p=>({...p,itens:p.itens.map((i,j)=>j===index?{...i,...patch}:i)}))
+  const submit=async(event:FormEvent)=>{event.preventDefault();setBusy(true);setError('');setNotice('');try{
+    const r=await areaFetch<{rececao:{id:string;numero:string}}>( '/api/area/material-receptions',{method:'POST',body:JSON.stringify(form)})
+    await refresh();close();setNotice(`Guia ${r.rececao.numero} registada como pendente. Ainda não altera o stock.`)
+  }catch(e){setError(e instanceof Error?e.message:'Não foi possível guardar a receção.')}finally{setBusy(false)}}
+  const confirm=async(row:Reception)=>{if(!window.confirm(`Confirma que os artigos da guia ${row.numero} foram recebidos e conferidos fisicamente?`))return;setBusy(true);setError('');try{
+    const result=await areaFetch<{novaConfirmacao:boolean}>(`/api/area/material-receptions/${encodeURIComponent(row.id)}/confirm`,{method:'POST'})
+    await refresh();close();setNotice(result.novaConfirmacao?'Receção confirmada: entrada no stock concluída.':'Receção já estava confirmada; nenhuma duplicação de stock.')
+  }catch(e){setError(e instanceof Error?e.message:'A confirmação falhou.')}finally{setBusy(false)}}
+  return <div className='space-y-4'>
+    <p className='rounded-lg border bg-muted/40 px-4 py-3 text-sm'>Receção → conferência física → confirmação → stock. Anexos digitais e distribuição continuam sujeitos a validação de segurança.</p>
+    {error&&<Alert variant='destructive'><AlertDescription>{error}</AlertDescription></Alert>}{notice&&<Alert><AlertDescription>{notice}</AlertDescription></Alert>}
+    <Card className='site-card overflow-hidden'><CardHeader className='flex flex-row items-center justify-between gap-3'><div><CardTitle className='flex items-center gap-2'><PackageCheck className='h-5 w-5 text-primary'/>Doações materiais</CardTitle><p className='mt-1 text-sm text-muted-foreground'>Guias, doadores, artigos e receção física.</p></div><Button onClick={startNew}><Plus className='mr-2 h-4 w-4'/>Nova receção</Button></CardHeader><CardContent className='p-0'>
+      <RecordListControls search={search} onSearchChange={v=>{setSearch(v);setPage(1)}} placeholder='Pesquisar guia, doador ou referência' filter={filter} onFilterChange={v=>{setFilter(v);setPage(1)}} filterOptions={[{value:'all',label:'Todos os estados'},{value:'pendente',label:'Pendentes'},{value:'confirmada',label:'Confirmadas'}]} sort={sort} onSortChange={v=>{setSort(v);setPage(1)}} sortOptions={[{value:'date_desc',label:'Mais recentes'},{value:'date_asc',label:'Mais antigos'},{value:'number_asc',label:'Número da guia'}]} page={Math.min(page,pages)} pageCount={pages} total={filtered.length} onPageChange={setPage}/>
+      {filtered.length===0?<p className='p-8 text-center text-sm text-muted-foreground'>Sem receções para os filtros selecionados.</p>:<div className='overflow-x-auto'><Table><TableHeader><TableRow><TableHead>Guia</TableHead><TableHead>Doador</TableHead><TableHead>Artigos</TableHead><TableHead>Data</TableHead><TableHead>Estado</TableHead><TableHead className='text-right'>Detalhes</TableHead></TableRow></TableHeader><TableBody>{shown.map(row=><TableRow key={row.id}><TableCell className='font-medium'>{row.numero}</TableCell><TableCell>{row.doador?.nome||'Anónimo'}</TableCell><TableCell>{row.itens?.length||0}</TableCell><TableCell>{row.criadoEm?.slice(0,10)||'—'}</TableCell><TableCell><Badge variant={row.estado==='confirmada'?'default':'secondary'}>{row.estado==='confirmada'?'Confirmada':'Pendente'}</Badge></TableCell><TableCell className='text-right'><Button variant='outline' size='sm' onClick={()=>{setSelected(row);setMode('view');setError('')}}><Eye className='mr-1.5 h-4 w-4'/>Ver</Button></TableCell></TableRow>)}</TableBody></Table></div>}
     </CardContent></Card>
-    <Card><CardHeader><CardTitle>Receções registadas</CardTitle></CardHeader><CardContent className="space-y-3">
-      {rows.length === 0 && <p className="text-sm text-muted-foreground">Sem receções ou módulo desativado.</p>}
-      {rows.map(row => <div key={row.id} className="flex flex-col justify-between gap-3 rounded-md border p-3 sm:flex-row">
-        <div className="text-sm"><strong>{row.numero}</strong> · {row.estado}
-          <p>{row.doador.nome} · {row.itens.length} artigos</p>
-          {row.referenciaDocumento && <p>Guia: {row.referenciaDocumento}</p>}
-          <ul className="list-inside list-disc text-muted-foreground">{row.itens.map((item, i) =>
-            <li key={i}>{item.descricao}: {item.quantidade} {item.unidade}</li>)}</ul>
-        </div>
-        {row.estado === "pendente" && <Button type="button" disabled={busy} onClick={() => void confirm(row)}>Confirmar receção</Button>}
-      </div>)}
-    </CardContent></Card>
+    <Sheet open={mode!==null} onOpenChange={v=>{if(!v)close()}}><SheetContent side='right' className='w-full overflow-y-auto sm:max-w-2xl'><SheetHeader><SheetTitle>{mode==='new'?'Registar doação material':selected?.numero||'Receção'}</SheetTitle><SheetDescription>{mode==='new'?'O registo fica pendente até conferência física.':'Registo com histórico e detalhe dos artigos.'}</SheetDescription></SheetHeader>
+      {error&&<p className='mt-4 text-sm text-destructive' role='alert'>{error}</p>}
+      {mode==='view'&&selected&&<div className='mt-6 space-y-4 text-sm'><div className='grid grid-cols-2 gap-3'>{([['Estado',selected.estado],['Doador',selected.doador?.nome],['Guia física',selected.referenciaDocumento],['Finalidade',selected.finalidade],['Recebido em',selected.criadoEm?.slice(0,10)]] as [string,string|undefined][]).map(([k,v])=><div className='rounded-lg border p-3' key={k}><p className='text-muted-foreground'>{k}</p><p className='mt-1 break-words font-medium'>{v||'—'}</p></div>)}</div><h3 className='font-semibold'>Artigos da guia</h3><div className='space-y-2'>{selected.itens?.map((i,j)=><div key={j} className='rounded-lg border p-3'><strong>{i.descricao}</strong><p>{i.categoria} · {i.quantidade} {i.unidade} · {i.estado}</p></div>)}</div>{selected.estado==='pendente'&&<Button disabled={busy} onClick={()=>void confirm(selected)}>Confirmar receção física e adicionar ao stock</Button>}</div>}
+      {mode==='new'&&<form onSubmit={submit} className='mt-6 space-y-4 text-sm'><label className='flex items-center gap-2'><input type='checkbox' checked={form.anonimo} disabled={busy} onChange={e=>setForm(p=>({...p,anonimo:e.target.checked}))}/>Doador anónimo</label>{!form.anonimo&&<div className='space-y-3'><label className='block'>Tipo de doador<select className='mt-1 w-full rounded-md border bg-background p-2' value={form.tipoDoador} onChange={e=>setForm(p=>({...p,tipoDoador:e.target.value}))}><option value='pessoa'>Pessoa</option><option value='organizacao'>Organização</option></select></label>{(['nomeDoador','emailDoador','telefoneDoador'] as const).map(k=><label key={k} className='block'><span>{k==='nomeDoador'?'Nome':k==='emailDoador'?'Email':'Telefone'}</span><Input required={k==='nomeDoador'} type={k==='emailDoador'?'email':'text'} value={form[k]} disabled={busy} onChange={e=>setForm(p=>({...p,[k]:e.target.value}))}/></label>)}</div>}{(['referenciaDocumento','finalidade'] as const).map(k=><label className='block' key={k}><span>{k==='referenciaDocumento'?'Referência da guia física':'Finalidade'}</span><Input value={form[k]} disabled={busy} onChange={e=>setForm(p=>({...p,[k]:e.target.value}))}/></label>)}<div className='border-t pt-4'><h3 className='mb-3 font-semibold'>Artigos</h3>{form.itens.map((item,index)=><div key={index} className='mb-3 space-y-2 rounded-lg border p-3'>{(['categoria','descricao'] as const).map(k=><label className='block' key={k}><span className='capitalize'>{k}</span><Input required value={item[k]} disabled={busy} onChange={e=>updateItem(index,{[k]:e.target.value})}/></label>)}<div className='grid grid-cols-3 gap-2'><label>Quantidade<Input type='number' required min='0.001' max='1000000' step='0.001' value={item.quantidade} disabled={busy} onChange={e=>updateItem(index,{quantidade:Number(e.target.value)})}/></label><label>Unidade<select className='mt-1 w-full rounded-md border bg-background p-2' value={item.unidade} onChange={e=>updateItem(index,{unidade:e.target.value})}>{['un','kg','l','caixa','pacote','m','outro'].map(v=><option key={v} value={v}>{v}</option>)}</select></label><label>Condição<select className='mt-1 w-full rounded-md border bg-background p-2' value={item.estado} onChange={e=>updateItem(index,{estado:e.target.value})}><option value='novo'>Novo</option><option value='usado_bom'>Usado bom</option><option value='usado_rever'>Usado rever</option></select></label></div>{form.itens.length>1&&<Button type='button' size='sm' variant='outline' onClick={()=>setForm(p=>({...p,itens:p.itens.filter((_,j)=>j!==index)}))}>Remover artigo</Button>}</div>)}<Button type='button' variant='outline' disabled={busy||form.itens.length>=50} onClick={()=>setForm(p=>({...p,itens:[...p.itens,newItem()]}))}>Adicionar artigo</Button></div><div className='flex justify-end gap-2 border-t pt-4'><Button type='button' variant='outline' onClick={close}>Cancelar</Button><Button type='submit' disabled={busy}>{busy?'A guardar…':'Registar pendente'}</Button></div></form>}
+    </SheetContent></Sheet>
   </div>
 }
