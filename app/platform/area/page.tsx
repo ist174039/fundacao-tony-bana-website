@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { ClipboardList, LayoutDashboard, ShieldCheck, Users, WalletCards, UserRoundCog, School, PackageCheck, GraduationCap } from "lucide-react"
+import { ClipboardList, LayoutDashboard, ShieldCheck, Users, WalletCards, UserRoundCog, School, PackageCheck, GraduationCap, FileText, Truck } from "lucide-react"
 import { AreaOverview } from "@/components/area/area-overview"
 import { SociosManager } from "@/components/area/socios-manager"
 import { UsersManager } from "@/components/area/users-manager"
@@ -12,6 +12,8 @@ import { ProfileSettings } from "@/components/area/profile-settings"
 import { SchoolsManager } from "@/components/area/schools-manager"
 import { StudentsManager } from "@/components/area/students-manager"
 import { MaterialReceptionsManager } from "@/components/area/material-receptions-manager"
+import { MaterialDeliveriesManager } from "@/components/area/material-deliveries-manager"
+import { DocumentWorkspaceManager } from "@/components/area/document-workspace-manager"
 import { MembershipLink } from "@/components/area/membership-link"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { onAuthChange, signOut } from "@/lib/firebase-auth"
@@ -56,6 +58,8 @@ export default function AreaPage() {
       {isAdmin && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="schools"><School className="mr-2 h-4 w-4"/>Escolas</TabsTrigger>}
       {isAdmin && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="students"><GraduationCap className="mr-2 h-4 w-4"/>Alunos</TabsTrigger>}
       {isAdmin && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="material"><PackageCheck className="mr-2 h-4 w-4"/>Doações materiais</TabsTrigger>}
+      {isAdmin && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="deliveries"><Truck className="mr-2 h-4 w-4"/>Entregas de doações</TabsTrigger>}
+      {isAdmin && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="documents"><FileText className="mr-2 h-4 w-4"/>Documentos</TabsTrigger>}
       <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="profile"><UserRoundCog className="mr-2 h-4 w-4"/>O meu perfil</TabsTrigger>
     </TabsList></div> : <div className="rounded-md border bg-background p-3 text-xs text-muted-foreground">Inicia sessão para consultar o teu espaço de trabalho.</div>}>
       <div className="mb-6 flex items-start gap-3 border-b border-border/70 pb-5"><div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><ShieldCheck className="h-5 w-5"/></div><div><div className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">{isAdmin ? "Gestão da Fundação" : "Espaço pessoal"}</div><h1 className="mt-1 text-2xl font-semibold tracking-tight">{isAdmin ? "Sócios e finanças" : "Acompanha as tuas quotas"}</h1><p className="mt-1 text-sm text-muted-foreground">{isAdmin ? "Acompanha sócios, acessos, quotas e doações." : "Consulta o teu registo, pagamentos e situação das quotas."}</p></div></div>
@@ -68,6 +72,8 @@ export default function AreaPage() {
         {isAdmin && <TabsContent value="schools"><SchoolsManager/></TabsContent>}
         {isAdmin && <TabsContent value="students"><StudentsManager/></TabsContent>}
         {isAdmin && <TabsContent value="material"><MaterialReceptionsManager/></TabsContent>}
+        {isAdmin && <TabsContent value="deliveries"><MaterialDeliveriesManager/></TabsContent>}
+        {isAdmin && <TabsContent value="documents"><DocumentWorkspaceManager/></TabsContent>}
         <TabsContent value="profile"><ProfileSettings/></TabsContent>
       </div>}
     </WorkspaceTemplate>
