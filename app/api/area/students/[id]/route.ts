@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server'
+import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from '@/lib/server/firebase-admin'
 import { isFieldEncryptionConfigured } from '@/lib/server/field-encryption.mjs'
 import { parseStudentInput, StudentInputError } from '@/lib/server/student-registry.mjs'
 import { isStudentIndexConfigured, sealStudent, openStudent } from '@/lib/server/student-private.mjs'
 export const runtime = 'nodejs'
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+  if (!(await isOperationalModuleEnabled('students'))) return NextResponse.json({ error: 'Módulo desativado na Configuração.' }, { status: 503 })
   if (process.env.FTB_STUDENTS_ENABLED !== 'true' || !isFirebaseAdminConfigured() || !isFieldEncryptionConfigured() || !isStudentIndexConfigured())
     return NextResponse.json({ error: 'Registo de alunos indisponível.' }, { status: 503 })
   const admin = await requireAreaAdmin(request)

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from "@/lib/server/firebase-admin"
 import { isSchoolCode, parseSchoolInput, SchoolValidationError } from "@/lib/server/schools-validation.mjs"
 import { isFieldEncryptionConfigured } from "@/lib/server/field-encryption.mjs"
@@ -7,6 +8,7 @@ import { patchSchool } from "@/lib/server/private-records.mjs"
 export const runtime = "nodejs"
 
 export async function PATCH(request: Request, { params }: { params: { code: string } }) {
+  if (!(await isOperationalModuleEnabled('schools'))) return NextResponse.json({ error: 'Módulo desativado na Configuração.' }, { status: 503 })
   if (process.env.FTB_SCHOOLS_ENABLED !== "true") return NextResponse.json({ error: "Módulo indisponível." }, { status: 503 })
   if (!isFirebaseAdminConfigured() || !isFieldEncryptionConfigured()) return NextResponse.json({ error: "Servidor ou cifragem não configurados." }, { status: 503 })
   const admin = await requireAreaAdmin(request)

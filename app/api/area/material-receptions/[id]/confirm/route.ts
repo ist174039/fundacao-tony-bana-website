@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from "@/lib/server/firebase-admin"
 import { isFieldEncryptionConfigured } from "@/lib/server/field-encryption.mjs"
 import { confirmMaterialReceipt } from "@/lib/server/material-stock.mjs"
@@ -10,6 +11,7 @@ export const runtime = "nodejs"
  * Only an authenticated area administrator may perform this operation.
  */
 export async function POST(request: Request, { params }: { params: { id: string } }) {
+  if (!(await isOperationalModuleEnabled('material'))) return NextResponse.json({ error: 'Módulo desativado na Configuração.' }, { status: 503 })
   if (process.env.FTB_MATERIAL_DONATIONS_ENABLED !== "true")
     return NextResponse.json({ error: "Módulo indisponível." }, { status: 503 })
   if (!isFirebaseAdminConfigured() || !isFieldEncryptionConfigured())

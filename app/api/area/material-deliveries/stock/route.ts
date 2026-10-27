@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server'
+import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from '@/lib/server/firebase-admin'
 import { isFieldEncryptionConfigured } from '@/lib/server/field-encryption.mjs'
 import { openStockLot } from '@/lib/server/material-delivery.mjs'
 export const runtime = 'nodejs'
 export async function GET(request: Request) {
+  if (!(await isOperationalModuleEnabled('deliveries'))) return NextResponse.json({ error: 'Módulo desativado na Configuração.' }, { status: 503 })
   if(process.env.FTB_MATERIAL_DELIVERIES_ENABLED!=='true' || !isFirebaseAdminConfigured() || !isFieldEncryptionConfigured())
     return NextResponse.json({error:'Stock indisponível.'},{status:503})
   if(!(await requireAreaAdmin(request))) return NextResponse.json({error:'Sem permissão.'},{status:403})

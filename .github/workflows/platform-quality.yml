@@ -26,7 +26,7 @@ jobs:
       - run: npm ci
       - run: npm run test:security
       - name: Test operational workspaces and access policies
-        run: node --test tests/github-project-sync.test.mjs tests/student-registry.test.mjs tests/student-private.test.mjs tests/access-grants.test.mjs tests/document-library.test.mjs tests/document-workspace.test.mjs tests/material-delivery.test.mjs
+        run: node --test tests/github-project-sync.test.mjs tests/student-registry.test.mjs tests/student-private.test.mjs tests/access-grants.test.mjs tests/document-library.test.mjs tests/document-workspace.test.mjs tests/material-delivery.test.mjs tests/module-registry.test.mjs
       - run: npm run test:market
       - name: Audit market readiness without triggering a release
         run: npm run audit:market -- --sha "$GITHUB_SHA"

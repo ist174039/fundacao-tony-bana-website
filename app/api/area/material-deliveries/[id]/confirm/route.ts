@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server'
+import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from '@/lib/server/firebase-admin'
 import { isFieldEncryptionConfigured } from '@/lib/server/field-encryption.mjs'
 import { confirmMaterialDelivery, MaterialDeliveryError } from '@/lib/server/material-delivery.mjs'
 export const runtime = 'nodejs'
 export async function POST(request: Request,{params}:{params:{id:string}}) {
+  if (!(await isOperationalModuleEnabled('deliveries'))) return NextResponse.json({ error: 'Módulo desativado na Configuração.' }, { status: 503 })
   if(process.env.FTB_MATERIAL_DELIVERIES_ENABLED!=='true' || !isFirebaseAdminConfigured() || !isFieldEncryptionConfigured())
     return NextResponse.json({error:'Entregas indisponíveis.'},{status:503})
   const admin=await requireAreaAdmin(request)

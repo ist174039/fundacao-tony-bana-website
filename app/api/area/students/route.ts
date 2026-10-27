@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from '@/lib/server/firebase-admin'
 import { isFieldEncryptionConfigured } from '@/lib/server/field-encryption.mjs'
 import { parseStudentInput, StudentInputError } from '@/lib/server/student-registry.mjs'
@@ -9,6 +10,7 @@ const ready = () => isFirebaseAdminConfigured() && isFieldEncryptionConfigured()
 const fail = (message: string, status: number) => NextResponse.json({ error: message }, { status })
 /** Admin-only pilot. Never make this route available to a school-scoped role without ABAC rules. */
 export async function GET(request: Request) {
+  if (!(await isOperationalModuleEnabled('students'))) return NextResponse.json({ error: 'Módulo desativado na Configuração.' }, { status: 503 })
   if (disabled() || !ready()) return fail('Registo de alunos indisponível.', 503)
   if (!(await requireAreaAdmin(request))) return fail('Sem permissão.', 403)
   try {
@@ -17,6 +19,7 @@ export async function GET(request: Request) {
   } catch { return fail('Não foi possível consultar alunos.', 500) }
 }
 export async function POST(request: Request) {
+  if (!(await isOperationalModuleEnabled('students'))) return NextResponse.json({ error: 'Módulo desativado na Configuração.' }, { status: 503 })
   if (disabled() || !ready()) return fail('Registo de alunos indisponível.', 503)
   const admin = await requireAreaAdmin(request)
   if (!admin) return fail('Sem permissão.', 403)

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from '@/lib/server/firebase-admin'
 import { isFieldEncryptionConfigured } from '@/lib/server/field-encryption.mjs'
 import { MaterialDeliveryError, parseMaterialDelivery, sealDelivery, openDelivery } from '@/lib/server/material-delivery.mjs'
@@ -11,6 +12,7 @@ async function authorize(request: Request) {
   return requireAreaAdmin(request)
 }
 export async function GET(request: Request) {
+  if (!(await isOperationalModuleEnabled('deliveries'))) return NextResponse.json({ error: 'Módulo desativado na Configuração.' }, { status: 503 })
   if (!enabled() || !isFirebaseAdminConfigured() || !isFieldEncryptionConfigured()) return fail('Entregas de doações indisponíveis.',503)
   if (!(await authorize(request))) return fail('Sem permissão.',403)
   try {
@@ -19,6 +21,7 @@ export async function GET(request: Request) {
   } catch { return fail('Não foi possível consultar entregas.',500) }
 }
 export async function POST(request: Request) {
+  if (!(await isOperationalModuleEnabled('deliveries'))) return NextResponse.json({ error: 'Módulo desativado na Configuração.' }, { status: 503 })
   if (!enabled() || !isFirebaseAdminConfigured() || !isFieldEncryptionConfigured()) return fail('Entregas de doações indisponíveis.',503)
   const actor = await authorize(request)
   if (!actor) return fail('Sem permissão.',403)

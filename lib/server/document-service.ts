@@ -1,4 +1,5 @@
 import 'server-only'
+import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
 import { getFirebaseAdminAuth, getFirebaseAdminFirestore, isConfiguredAreaAdmin } from '@/lib/server/firebase-admin'
 import { isFieldEncryptionConfigured } from '@/lib/server/field-encryption.mjs'
 import { getStorage } from 'firebase-admin/storage'
@@ -15,7 +16,7 @@ export function privateDocumentBucket() {
 }
 export type DocumentActor={uid:string;admin:boolean;grant:{profiles:string[];schoolCodes:string[];overrides:unknown[]};teamIds:string[]}
 export async function resolveDocumentActor(request: Request):Promise<DocumentActor|null>{
- if(!documentFeatureReady())return null
+ if(!documentFeatureReady() || !(await isOperationalModuleEnabled('documents')))return null
  const token=request.headers.get('authorization')?.replace(/^Bearer\s+/i,'')
  if(!token)return null
  try {
