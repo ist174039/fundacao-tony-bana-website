@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { ClipboardList, LayoutDashboard, ShieldCheck, Users, WalletCards, UserRoundCog, School, PackageCheck } from "lucide-react"
+import { ClipboardList, LayoutDashboard, ShieldCheck, Users, WalletCards, UserRoundCog, School, PackageCheck, GraduationCap } from "lucide-react"
 import { AreaOverview } from "@/components/area/area-overview"
 import { SociosManager } from "@/components/area/socios-manager"
 import { UsersManager } from "@/components/area/users-manager"
@@ -10,6 +10,7 @@ import { FinanceManager } from "@/components/area/finance-manager"
 import { IntentionsManager } from "@/components/area/intentions-manager"
 import { ProfileSettings } from "@/components/area/profile-settings"
 import { SchoolsManager } from "@/components/area/schools-manager"
+import { StudentsManager } from "@/components/area/students-manager"
 import { MaterialReceptionsManager } from "@/components/area/material-receptions-manager"
 import { MembershipLink } from "@/components/area/membership-link"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -52,7 +53,8 @@ export default function AreaPage() {
       <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="finance"><WalletCards className="mr-2 h-4 w-4"/>{isAdmin ? "Quotas e finanças" : "Quotas e pagamentos"}</TabsTrigger>
       {isAdmin && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="intentions"><ClipboardList className="mr-2 h-4 w-4"/>Contactos e pedidos</TabsTrigger>}
       {isAdmin && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="users"><ShieldCheck className="mr-2 h-4 w-4"/>Utilizadores</TabsTrigger>}
-      {isAdmin && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="schools"><School className="mr-2 h-4 w-4"/>Escolas</TabsTrigger>}
+      {isAdmin && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="schools"><School className="mr-2 h-4 w-4"/>Escolas</TabsTrigger>
+      {isAdmin && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="students"><GraduationCap className="mr-2 h-4 w-4"/>Alunos</TabsTrigger>}}
       {isAdmin && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="material"><PackageCheck className="mr-2 h-4 w-4"/>Doações materiais</TabsTrigger>}
       <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="profile"><UserRoundCog className="mr-2 h-4 w-4"/>O meu perfil</TabsTrigger>
     </TabsList></div> : <div className="rounded-md border bg-background p-3 text-xs text-muted-foreground">Inicia sessão para consultar o teu espaço de trabalho.</div>}>
@@ -64,6 +66,7 @@ export default function AreaPage() {
         {role === "admin" && <TabsContent value="intentions"><IntentionsManager/></TabsContent>}
         {role === "admin" && <TabsContent value="users"><UsersManager/></TabsContent>}
         {isAdmin && <TabsContent value="schools"><SchoolsManager/></TabsContent>}
+        {isAdmin && <TabsContent value="students"><StudentsManager/></TabsContent>}
         {isAdmin && <TabsContent value="material"><MaterialReceptionsManager/></TabsContent>}
         <TabsContent value="profile"><ProfileSettings/></TabsContent>
       </div>}

@@ -1,0 +1,50 @@
+name: Fundação Tony Bana — GitHub Project reconciliation
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Add missing Issues to Project #2 (requires configured token)'
+        type: boolean
+        default: false
+  issues:
+    types: [opened, reopened, edited]
+  schedule:
+    - cron: '17 3 * * *'
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  project-reconciliation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      FTB_GH_PROJECTS_TOKEN: ${{ secrets.FTB_GH_PROJECTS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify reconciliation logic offline
+        run: node --test tests/github-project-sync.test.mjs
+      - name: Token and permissions preflight
+        id: access
+        shell: bash
+        run: |
+          if [ -z "$FTB_GH_PROJECTS_TOKEN" ]; then
+            echo 'available=false' >> "$GITHUB_OUTPUT"
+            echo '### Pending: FTB_GH_PROJECTS_TOKEN is not configured' >> "$GITHUB_STEP_SUMMARY"
+            echo 'Project #2 requires a token with read/write access to Projects and issues. No writes performed.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'available=true' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Idempotent Project #2 backfill / maintenance
+        if: steps.access.outputs.available == 'true'
+        run: |
+          if [ "${{ github.event_name }}" = 'workflow_dispatch' ] && [ "${{ inputs.apply }}" != 'true' ]; then
+            node scripts/sync-github-project.mjs --dry-run
+          else
+            node scripts/sync-github-project.mjs --apply
+          fi
