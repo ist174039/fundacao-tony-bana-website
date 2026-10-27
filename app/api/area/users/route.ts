@@ -1,3 +1,4 @@
+import { appendAuditEvent, auditedUpdate, writeExternalAudit } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from "next/server"
 import { randomBytes } from "node:crypto"
 import { getFirebaseAdminAuth, getFirebaseAdminFirestore, isConfiguredAreaAdminUser, isEnvironmentAreaAdminUser, isFirebaseAdminConfigured, requireAreaAdmin } from "@/lib/server/firebase-admin"
@@ -59,6 +60,8 @@ export async function POST(request: Request) {
       }
       if (socio.get("uid")) return NextResponse.json({ error: "Este sócio já tem uma conta associada." }, { status: 409 })
     }
+    const dbForAudit=getFirebaseAdminFirestore()
+    await writeExternalAudit(dbForAudit,{module:'users',action:'auth-create',recordPath:'firebase_auth/users/new',actorUid:admin.uid,after:{email,displayName},source:'auth-intent'})
     const user = await auth.createUser({
       email,
       displayName,
@@ -66,11 +69,15 @@ export async function POST(request: Request) {
       emailVerified: false,
     })
     try {
-      if (socioRef) await socioRef.update({ uid: user.uid, accountLinkedAt: new Date().toISOString(), updatedBy: admin.uid })
+      if (socioRef) {
+        const changed=await auditedUpdate(socioRef,{uid:user.uid,accountLinkedAt:new Date().toISOString(),updatedBy:admin.uid},{module:'socios',actorUid:admin.uid,action:'link'})
+        if(!changed)throw new Error('Membership not found')
+      }
     } catch {
       await auth.deleteUser(user.uid)
       throw new Error("Unable to link user to membership")
     }
+    await writeExternalAudit(dbForAudit,{module:'users',action:'auth-create',recordPath:'firebase_auth/users/'+user.uid,actorUid:admin.uid,after:{uid:user.uid,displayName,linkedSocio:Boolean(socioRef)},source:'auth-completed'})
     return NextResponse.json({ user: { uid: user.uid, email, displayName }, linkedSocio: Boolean(socioRef) }, { status: 201 })
   } catch (error) {
     const code = (error as { code?: string })?.code
@@ -107,8 +114,10 @@ export async function PATCH(request: Request) {
         } while (pageToken)
         if (activeAdmins <= 1) return NextResponse.json({ error: "Não é possível remover o último administrador ativo." }, { status: 409 })
       }
+      await writeExternalAudit(getFirebaseAdminFirestore(),{module:'users',action:'auth-update',recordPath:'firebase_auth/users/'+uid,actorUid:admin.uid,before:{admin:target.customClaims?.admin===true},after:{admin:adminRole},source:'auth-intent'})
       await auth.setCustomUserClaims(uid, { ...target.customClaims, admin: adminRole })
       await auth.revokeRefreshTokens(uid)
+      await writeExternalAudit(getFirebaseAdminFirestore(),{module:'users',action:'auth-update',recordPath:'firebase_auth/users/'+uid,actorUid:admin.uid,before:{admin:target.customClaims?.admin===true},after:{admin:adminRole},source:'auth-completed'})
       return NextResponse.json({ success: true })
     }
     if (uid && linkSocioId && typeof disabled === "undefined") {
@@ -121,7 +130,9 @@ export async function PATCH(request: Request) {
         if (!socio.exists || socio.get("estado") !== "ativo") return "invalid"
         if (socio.get("uid")) return "linked"
         if (!memberEmailMatches(socio.data(), socioRef.path, target.email || "")) return "email"
-        transaction.update(socioRef, { uid, accountLinkedAt: new Date().toISOString(), updatedBy: admin.uid })
+        const linked={uid,accountLinkedAt:new Date().toISOString(),updatedBy:admin.uid}
+        transaction.update(socioRef,linked)
+        appendAuditEvent(transaction,db,{module:'socios',action:'link',recordPath:socioRef.path,actorUid:admin.uid,before:socio.data(),after:{...socio.data(),...linked}})
         return "ok"
       })
       if (result === "invalid") return NextResponse.json({ error: "O sócio selecionado não existe ou está inativo." }, { status: 400 })
@@ -153,8 +164,11 @@ export async function PATCH(request: Request) {
       }
     }
 
+    const priorUser=await auth.getUser(uid)
+    await writeExternalAudit(getFirebaseAdminFirestore(),{module:'users',action:'auth-update',recordPath:'firebase_auth/users/'+uid,actorUid:admin.uid,before:{disabled:priorUser.disabled},after:{disabled},source:'auth-intent'})
     await auth.updateUser(uid, { disabled })
     if (disabled) await auth.revokeRefreshTokens(uid)
+    await writeExternalAudit(getFirebaseAdminFirestore(),{module:'users',action:'auth-update',recordPath:'firebase_auth/users/'+uid,actorUid:admin.uid,before:{disabled:priorUser.disabled},after:{disabled},source:'auth-completed'})
     return NextResponse.json({ success: true })
   } catch {
     return NextResponse.json({ error: "Não foi possível atualizar o utilizador." }, { status: 500 })
