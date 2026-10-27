@@ -11,7 +11,7 @@ export async function GET(request:Request){
  if(!actor)return fail('Sem permissão.',403)
  try{
   const rows=await getFirebaseAdminFirestore().collection('area_doc_files').orderBy('updatedAt','desc').limit(300).get()
-  return NextResponse.json({documents:rows.docs.filter(d=>canOperateDocument(actor,d.data(),'read')).map(d=>documentView(d,d.data()))})
+  return NextResponse.json({documents:rows.docs.filter(d=>canOperateDocument(actor,d.data(),'read')).map(d=>documentView(d.ref,d.data()))})
  }catch{return fail('Não foi possível consultar documentos.',500)}
 }
 export async function POST(request:Request){
