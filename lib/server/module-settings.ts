@@ -1,4 +1,5 @@
 import 'server-only'
+import { environmentReviewBlockers } from '@/lib/server/security-readiness.mjs'
 import { appendAuditEvent } from '@/lib/server/audit-log.mjs'
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured } from '@/lib/server/firebase-admin'
 import { isFieldEncryptionConfigured } from '@/lib/server/field-encryption.mjs'
@@ -20,6 +21,7 @@ function capabilities() {
   for (const item of MODULES) {
     const blockers: string[] = []
     if (process.env[item.envFlag] !== 'true') blockers.push('A ativação técnica ainda não foi autorizada no ambiente do servidor.')
+    blockers.push(...environmentReviewBlockers(item.id))
     if (!isFirebaseAdminConfigured()) blockers.push('Ligação administrativa ao Firebase não configurada.')
     if (item.requiresEncryption && !isFieldEncryptionConfigured()) blockers.push('Chaves de cifragem não configuradas.')
     if (item.id === 'students' && !isStudentIndexConfigured()) blockers.push('Índice privado dos alunos não configurado.')
