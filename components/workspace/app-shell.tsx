@@ -47,7 +47,7 @@ export function WorkspaceTemplate({ product, title, email, onLogout, sidebar, ch
         <div className="mt-6 hidden rounded-lg border bg-background p-3 text-xs leading-5 text-muted-foreground lg:block"><p className="font-medium text-foreground">{product}</p><p className="mt-1">Fundação Tony Bana · espaço de trabalho</p></div>
       </aside>
       <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}><SheetContent side="left" className="w-[min(88vw,22rem)] overflow-y-auto p-4 lg:hidden"><SheetHeader><SheetTitle className="text-left">{product}</SheetTitle></SheetHeader><nav aria-label="Navegação principal" className="mobile-workspace-nav mt-5" onClickCapture={event=>{if((event.target as HTMLElement).closest('[role="tab"]'))setMobileNavOpen(false)}}>{sidebar}</nav>{search&&<div className="mt-5"><Input value={search.value} onChange={event=>search.onChange(event.target.value)} placeholder={search.placeholder} aria-label={search.placeholder}/></div>}</SheetContent></Sheet>
-      <main className="min-w-0 w-full px-3 py-4 sm:px-6 sm:py-6 lg:h-[calc(100vh-4rem)] lg:overflow-y-auto lg:px-8 lg:py-7"> sm:px-6 sm:py-6 lg:h-[calc(100vh-4rem)] lg:overflow-y-auto lg:px-8 lg:py-7">{children}</main>
+      <main className="min-w-0 w-full px-3 py-4 sm:px-6 sm:py-6 lg:h-[calc(100vh-4rem)] lg:overflow-y-auto lg:px-8 lg:py-7">{children}</main>
     </div>
   </div>
 }
