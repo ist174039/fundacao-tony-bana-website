@@ -1,3 +1,4 @@
+import {operationalActor,permittedSchool} from '@/lib/server/operational-authorization'
 import { NextResponse } from 'next/server'
 import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from '@/lib/server/firebase-admin'
@@ -8,8 +9,11 @@ export async function POST(request: Request,{params}:{params:{id:string}}) {
   if (!(await isOperationalModuleEnabled('deliveries'))) return NextResponse.json({ error: 'Módulo desativado na Configuração.' }, { status: 503 })
   if(process.env.FTB_MATERIAL_DELIVERIES_ENABLED!=='true' || !isFirebaseAdminConfigured() || !isFieldEncryptionConfigured())
     return NextResponse.json({error:'Entregas indisponíveis.'},{status:503})
-  const admin=await requireAreaAdmin(request)
+  const admin=await operationalActor(request,'deliveries','change_status')
   if(!admin) return NextResponse.json({error:'Sem permissão.'},{status:403})
+  const target=await getFirebaseAdminFirestore().collection('area_material_deliveries').doc(params.id).get()
+  if(!target.exists)return NextResponse.json({error:'Entrega não encontrada.'},{status:404})
+  if(!admin.admin&&(!target.get('escolaCodigo')||!permittedSchool(admin,target.get('escolaCodigo'))))return NextResponse.json({error:'Sem acesso ao destino.'},{status:403})
   try {
     const result=await confirmMaterialDelivery(getFirebaseAdminFirestore(),params.id,admin.uid,await request.json())
     if(result==='not-found') return NextResponse.json({error:'Entrega não encontrada.'},{status:404})
