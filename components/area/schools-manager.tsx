@@ -32,6 +32,7 @@ export function SchoolsManager() {
   const close=()=>{setMode(null);setSelected(null);setContacts([]);setEditingContactId(null);setContact(freshContact());setError('')}
   const openNew=()=>{setForm(fresh());setSelected(null);setMode('new');setError('');setNotice('')}
   const openSchool=(row:SchoolItem,edit=false)=>{setSelected(row);setForm({...fresh(),...row});setMode(edit?'edit':'view');setContacts([]);setEditingContactId(null);setContact(freshContact());setError('');void areaFetch<{contactos:Contact[]}>(`/api/area/schools/${encodeURIComponent(row.codigo)}/contacts`).then(r=>setContacts(r.contactos)).catch(e=>setError(e instanceof Error?e.message:'Falha ao consultar os responsáveis.'))}
+  const archive=async(row:SchoolItem)=>{if(!window.confirm(`Arquivar a escola ${row.nome}? Os registos históricos serão mantidos.`))return;setBusy(true);setError('');try{await areaFetch(`/api/area/schools/${encodeURIComponent(row.codigo)}`,{method:'DELETE'});await refresh();close();setNotice('Escola arquivada.')}catch(e){setError(e instanceof Error?e.message:'Falha ao arquivar escola.')}finally{setBusy(false)}}
   const save=async(e:FormEvent)=>{e.preventDefault();setBusy(true);setError('');try{
     if(mode==='edit'&&selected){const {codigo,...update}=form;await areaFetch(`/api/area/schools/${encodeURIComponent(selected.codigo)}`,{method:'PATCH',body:JSON.stringify(update)})}
     else await areaFetch('/api/area/schools',{method:'POST',body:JSON.stringify(form)})
