@@ -37,7 +37,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   if (!isFirebaseAdminConfigured()) return NextResponse.json({ error: "A área ainda não está configurada no servidor." }, { status: 503 })
-  const admin = await operationalActor(request,'finance','create')
+  const admin = await requireAreaAdmin(request)
   if (!admin) return NextResponse.json({ error: "Sem autorização para gerir sócios." }, { status: 403 })
   const secureMembers = process.env.FTB_SECURE_MEMBER_REGISTRY === "true"
   if (secureMembers && (!isFieldEncryptionConfigured() || !isMemberIndexConfigured()))
