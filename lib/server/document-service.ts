@@ -1,4 +1,5 @@
 import 'server-only'
+import {documentBucketIsAcceptable,environmentReviewBlockers} from '@/lib/server/security-readiness.mjs'
 import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
 import { getFirebaseAdminAuth, getFirebaseAdminFirestore, isConfiguredAreaAdmin } from '@/lib/server/firebase-admin'
 import { isFieldEncryptionConfigured } from '@/lib/server/field-encryption.mjs'
@@ -7,10 +8,11 @@ import { canAccess, validateAccessGrant, EMPTY_ACCESS_GRANT } from '@/lib/server
 import { canUseDocument } from '@/lib/server/document-library.mjs'
 import { VALID_ID, openDocumentName } from '@/lib/server/document-workspace.mjs'
 
-export const documentFeatureReady = () => process.env.FTB_DOCUMENTS_ENABLED === 'true' && isFieldEncryptionConfigured() && !!process.env.FIREBASE_SERVICE_ACCOUNT_JSON && !!process.env.FTB_DOCUMENTS_BUCKET
+export const documentFeatureReady = () => process.env.FTB_DOCUMENTS_ENABLED === 'true' && isFieldEncryptionConfigured() && !!process.env.FIREBASE_SERVICE_ACCOUNT_JSON && environmentReviewBlockers('documents').length===0
 export function privateDocumentBucket() {
  const name=process.env.FTB_DOCUMENTS_BUCKET
- if(!name || !/^[a-z0-9][a-z0-9.-]{5,200}$/.test(name))throw new Error('Bucket privado não configurado.')
+ if(!documentBucketIsAcceptable({privateBucket:name,publicBucket:process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,sharedBucketReviewed:process.env.FTB_SHARED_DOCUMENTS_STORAGE_VERIFIED==='true'}))throw new Error('O bucket de documentos não está autorizado para armazenamento privado.')
+ if(environmentReviewBlockers('documents').length>0)throw new Error('Revisão das regras de documentos não confirmada.')
  // Authenticated server operations only; never hand out Firebase download tokens or signed URLs.
  return getStorage().bucket(name)
 }

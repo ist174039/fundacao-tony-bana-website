@@ -1,0 +1,8 @@
+// CANDIDATE for a NEW TEST bucket, separate from the public media bucket.
+// Admin SDK server endpoints mediate private document reads and uploads.
+rules_version = '2';
+service firebase.storage {
+ match /b/{bucket}/o {
+  match /{allPaths=**} { allow read, write: if false; }
+ }
+}

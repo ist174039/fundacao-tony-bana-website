@@ -1,0 +1,18 @@
+// CANDIDATE FOR DEDICATED TEST PROJECT ONLY. DO NOT DEPLOY OVER PRODUCTION!
+// The active rules and every overlapping wildcard allow must be reviewed first.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Existing website reads these content collections through the client SDK.
+    // Confirm all fields here are intended to be public.
+    match /eventos/{id} { allow get, list: if true; allow write: if false; }
+    match /programas/{id} { allow get, list: if true; allow write: if false; }
+    match /agenda/{id} { allow get, list: if true; allow write: if false; }
+    match /noticias/{id} { allow get, list: if true; allow write: if false; }
+    match /membros/{id} { allow get, list: if true; allow write: if false; }
+    match /parceiros/{id} { allow get, list: if true; allow write: if false; }
+    match /carrossel/{id} { allow get, list: if true; allow write: if false; }
+    // Everything else, including audit records and child collections, is private.
+    match /{document=**} { allow read, write: if false; }
+  }
+}
