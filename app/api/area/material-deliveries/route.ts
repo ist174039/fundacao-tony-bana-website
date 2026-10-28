@@ -1,4 +1,4 @@
-import { auditedCreate } from '@/lib/server/audit-log.mjs'
+import { appendAuditEvent } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from 'next/server'
 import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from '@/lib/server/firebase-admin'
@@ -33,13 +33,27 @@ export async function POST(request: Request) {
       const school = await db.collection('area_schools').doc(input.escolaCodigo).get()
       if (!school.exists || school.get('estado')!=='ativa') return fail('Escola de destino inexistente ou inativa.',422)
     }
-    // A pending delivery does not reserve or subtract stock. Confirmation is transactional.
-    const lots = await Promise.all(input.itens.map(line=>db.collection('area_material_stock_lots').doc(line.loteId).get()))
-    if (lots.some((lot,i)=>!lot.exists || Number(lot.get('quantidadeDisponivel'))<input.itens[i].quantidade))
-      return fail('Stock disponível insuficiente para preparar a entrega.',409)
-    const ref=db.collection('area_material_deliveries').doc(), stamp=new Date().toISOString()
+    // Reserve inside a Firestore transaction to prevent competing pending deliveries.
+    const ref=db.collection('area_material_deliveries').doc(),stamp=new Date().toISOString()
     const numero=`ENT-${stamp.slice(0,10).replace(/-/g,'')}-${ref.id.slice(0,8).toUpperCase()}`
-    await auditedCreate(ref,{...sealDelivery(input,ref.path),numero,estado:'pendente',criadoEm:stamp,criadoPor:actor.uid,entregueEm:null,confirmadoPor:null},{module:'material-deliveries',actorUid:actor.uid})
+    const reserved=await db.runTransaction(async tx=>{
+      const lotRefs=input.itens.map(line=>db.collection('area_material_stock_lots').doc(line.loteId))
+      const lots=await Promise.all(lotRefs.map(x=>tx.get(x)))
+      for(let i=0;i<lots.length;i++){
+        const physical=Number(lots[i].get('quantidadeDisponivel'))
+        const reserved=Number(lots[i].get('quantidadeReservada')||0)
+        if(!lots[i].exists||!Number.isFinite(physical)||!Number.isFinite(reserved)||physical-reserved<input.itens[i].quantidade)return false
+      }
+      for(let i=0;i<lots.length;i++){
+        const before=lots[i],newReserved=Math.round((Number(before.get('quantidadeReservada')||0)+input.itens[i].quantidade)*1000)/1000
+        tx.update(before.ref,{quantidadeReservada:newReserved})
+      }
+      const doc={...sealDelivery(input,ref.path),numero,estado:'pendente',reservaAtiva:true,criadoEm:stamp,criadoPor:actor.uid,entregueEm:null,confirmadoPor:null}
+      tx.create(ref,doc)
+      appendAuditEvent(tx,db,{module:'material-deliveries',action:'create',recordPath:ref.path,actorUid:actor.uid,after:doc,at:stamp})
+      return true
+    })
+    if(!reserved)return fail('Stock livre insuficiente para reservar esta entrega.',409)
     return NextResponse.json({entrega:{id:ref.id,numero,estado:'pendente'}},{status:201})
   } catch(error) {
     if(error instanceof MaterialDeliveryError || error instanceof SyntaxError) return fail(error.message,400)

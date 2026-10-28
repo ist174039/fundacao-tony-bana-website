@@ -11,6 +11,7 @@ import { IntentionsManager } from "@/components/area/intentions-manager"
 import { ProfileSettings } from "@/components/area/profile-settings"
 import { SchoolsManager } from "@/components/area/schools-manager"
 import { StudentsManager } from "@/components/area/students-manager"
+import { SocialImpactDashboard } from "@/components/area/social-impact-dashboard"
 import { MaterialReceptionsManager } from "@/components/area/material-receptions-manager"
 import { MaterialDeliveriesManager } from "@/components/area/material-deliveries-manager"
 import { DocumentWorkspaceManager } from "@/components/area/document-workspace-manager"
@@ -62,6 +63,7 @@ export default function AreaPage() {
       {isAdmin && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="intentions"><ClipboardList className="mr-2 h-4 w-4"/>Contactos e pedidos</TabsTrigger>}
       {isAdmin && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="users"><ShieldCheck className="mr-2 h-4 w-4"/>Utilizadores</TabsTrigger>}
       {isAdmin && isModuleEnabled("schools") && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="schools"><School className="mr-2 h-4 w-4"/>Escolas</TabsTrigger>}
+      {isAdmin && isModuleEnabled("students") && isModuleEnabled("deliveries") && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="impact"><LayoutDashboard className="mr-2 h-4 w-4"/>Impacto social</TabsTrigger>}
       {isAdmin && isModuleEnabled("students") && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="students"><GraduationCap className="mr-2 h-4 w-4"/>Alunos</TabsTrigger>}
       {isAdmin && isModuleEnabled("material") && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="material"><PackageCheck className="mr-2 h-4 w-4"/>Doações materiais</TabsTrigger>}
       {isAdmin && isModuleEnabled("deliveries") && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="deliveries"><Truck className="mr-2 h-4 w-4"/>Entregas de doações</TabsTrigger>}
@@ -78,6 +80,7 @@ export default function AreaPage() {
         {role === "admin" && <TabsContent value="intentions"><IntentionsManager/></TabsContent>}
         {role === "admin" && <TabsContent value="users"><UsersManager/></TabsContent>}
         {isAdmin && isModuleEnabled("schools") && <TabsContent value="schools"><SchoolsManager/></TabsContent>}
+        {isAdmin && isModuleEnabled("students") && isModuleEnabled("deliveries") && <TabsContent value="impact"><SocialImpactDashboard/></TabsContent>}
         {isAdmin && isModuleEnabled("students") && <TabsContent value="students"><StudentsManager/></TabsContent>}
         {isAdmin && isModuleEnabled("material") && <TabsContent value="material"><MaterialReceptionsManager/></TabsContent>}
         {isAdmin && isModuleEnabled("deliveries") && <TabsContent value="deliveries"><MaterialDeliveriesManager/></TabsContent>}
