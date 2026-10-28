@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { ClipboardList, LayoutDashboard, ShieldCheck, Users, WalletCards, UserRoundCog, School, PackageCheck, GraduationCap, FileText, Truck, Settings2, History } from "lucide-react"
+import { ClipboardList, LayoutDashboard, ShieldCheck, Users, WalletCards, UserRoundCog, School, PackageCheck, GraduationCap, FileText, Truck, Settings2, History, Boxes } from "lucide-react"
 import { AreaOverview } from "@/components/area/area-overview"
 import { SociosManager } from "@/components/area/socios-manager"
 import { UsersManager } from "@/components/area/users-manager"
@@ -13,6 +13,7 @@ import { SchoolsManager } from "@/components/area/schools-manager"
 import { StudentsManager } from "@/components/area/students-manager"
 import { MaterialReceptionsManager } from "@/components/area/material-receptions-manager"
 import { MaterialDeliveriesManager } from "@/components/area/material-deliveries-manager"
+import { StockAnalysisManager } from "@/components/area/stock-analysis-manager"
 import { DocumentWorkspaceManager } from "@/components/area/document-workspace-manager"
 import { ModuleSettingsManager } from "@/components/area/module-settings-manager"
 import { AuditLogManager } from "@/components/area/audit-log-manager"
@@ -64,6 +65,7 @@ export default function AreaPage() {
       {isAdmin && isModuleEnabled("schools") && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="schools"><School className="mr-2 h-4 w-4"/>Escolas</TabsTrigger>}
       {isAdmin && isModuleEnabled("students") && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="students"><GraduationCap className="mr-2 h-4 w-4"/>Alunos</TabsTrigger>}
       {isAdmin && isModuleEnabled("material") && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="material"><PackageCheck className="mr-2 h-4 w-4"/>Doações materiais</TabsTrigger>}
+      {isAdmin && isModuleEnabled("material") && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="stock"><Boxes className="mr-2 h-4 w-4"/>Stock disponível</TabsTrigger>}
       {isAdmin && isModuleEnabled("deliveries") && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="deliveries"><Truck className="mr-2 h-4 w-4"/>Entregas de doações</TabsTrigger>}
       {isAdmin && isModuleEnabled("documents") && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="documents"><FileText className="mr-2 h-4 w-4"/>Documentos</TabsTrigger>}
       {isAdmin && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="settings"><Settings2 className="mr-2 h-4 w-4"/>Configuração</TabsTrigger>}
@@ -80,6 +82,7 @@ export default function AreaPage() {
         {isAdmin && isModuleEnabled("schools") && <TabsContent value="schools"><SchoolsManager/></TabsContent>}
         {isAdmin && isModuleEnabled("students") && <TabsContent value="students"><StudentsManager/></TabsContent>}
         {isAdmin && isModuleEnabled("material") && <TabsContent value="material"><MaterialReceptionsManager/></TabsContent>}
+        {isAdmin && isModuleEnabled("material") && <TabsContent value="stock"><StockAnalysisManager/></TabsContent>}
         {isAdmin && isModuleEnabled("deliveries") && <TabsContent value="deliveries"><MaterialDeliveriesManager/></TabsContent>}
         {isAdmin && isModuleEnabled("documents") && <TabsContent value="documents"><DocumentWorkspaceManager/></TabsContent>}
         {isAdmin && <TabsContent value="settings"><ModuleSettingsManager onChanged={onModuleChanged}/></TabsContent>}

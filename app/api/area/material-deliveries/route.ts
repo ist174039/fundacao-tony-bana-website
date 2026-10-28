@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from '@/lib/server/firebase-admin'
 import { isFieldEncryptionConfigured } from '@/lib/server/field-encryption.mjs'
-import { MaterialDeliveryError, parseMaterialDelivery, sealDelivery, openDelivery } from '@/lib/server/material-delivery.mjs'
+import { MaterialDeliveryError, parseMaterialDelivery, canonicalDeliveryDestination, sealDelivery, openDelivery } from '@/lib/server/material-delivery.mjs'
 
 export const runtime = 'nodejs'
 const enabled = () => process.env.FTB_MATERIAL_DELIVERIES_ENABLED === 'true'
@@ -27,11 +27,12 @@ export async function POST(request: Request) {
   const actor = await authorize(request)
   if (!actor) return fail('Sem permissão.',403)
   try {
-    const input = parseMaterialDelivery(await request.json())
+    let input = parseMaterialDelivery(await request.json())
     const db = getFirebaseAdminFirestore()
     if (input.escolaCodigo) {
       const school = await db.collection('area_schools').doc(input.escolaCodigo).get()
       if (!school.exists || school.get('estado')!=='ativa') return fail('Escola de destino inexistente ou inativa.',422)
+      input = canonicalDeliveryDestination(input,school.data())
     }
     // A pending delivery does not reserve or subtract stock. Confirmation is transactional.
     const lots = await Promise.all(input.itens.map(line=>db.collection('area_material_stock_lots').doc(line.loteId).get()))
