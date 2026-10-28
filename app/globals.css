@@ -155,3 +155,23 @@
     outline-offset: 2px;
   }
 }
+
+/* Mobile workspace: the navigation is a drawer, not a horizontal tab strip. */
+@media (max-width: 1023px) {
+  .mobile-workspace-nav [role="tablist"] {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    height: auto !important;
+    width: 100% !important;
+    overflow: visible !important;
+    gap: .25rem;
+  }
+  .mobile-workspace-nav [role="tab"] {
+    width: 100%;
+    min-height: 44px;
+    justify-content: flex-start;
+    white-space: normal;
+    text-align: left;
+  }
+}
