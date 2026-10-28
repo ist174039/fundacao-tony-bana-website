@@ -37,7 +37,7 @@ export async function GET(request:Request,{params}:{params:{id:string}}){
   const ref=db.collection('area_family_assessments').doc(params.id),snapshot=await ref.get()
   if(!snapshot.exists)return NextResponse.json({avaliacao:null},{headers:{'Cache-Control':'private, no-store'}})
   const data=snapshot.data()!
-  return NextResponse.json({avaliacao:{...decryptJson(data.dadosPrivados,ref.path+'#family-assessment-v1'),atualizadoEm:data.atualizadoEm,atualizadoPor:data.atualizadoPor}},{headers:{'Cache-Control':'private, no-store'}})
+  return NextResponse.json({avaliacao:{...decryptJson(data.dadosPrivados,ref.path+'#family-assessment-v1'),atualizadoEm:data.atualizadoEm,atualizadoPor:data.atualizadoPor,estado:data.estado||'rascunho'}},{headers:{'Cache-Control':'private, no-store'}})
  } catch {return NextResponse.json({error:'Não foi possível consultar a avaliação.'},{status:500})}
 }
 export async function PUT(request:Request,{params}:{params:{id:string}}){
