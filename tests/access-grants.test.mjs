@@ -38,3 +38,13 @@ test('normalized policy only contains explicit allowlisted fields', () => {
   assert.deepEqual(Object.keys(grant).sort(), ['overrides', 'profiles', 'schoolCodes']);
   assert.equal(canAccess(grant, 'donations', 'create'), true);
 });
+
+test('independent status, edit and delete permissions across modules',()=>{
+ const grant={profiles:[],schoolCodes:['ESC-001'],overrides:[{module:'deliveries',action:'change_status',allow:true},{module:'deliveries',action:'update',allow:false},{module:'deliveries',action:'delete',allow:false},{module:'families',action:'read',allow:true}]}
+ assert.equal(canAccess(grant,'deliveries','change_status'),true)
+ assert.equal(canAccess(grant,'deliveries','update'),false)
+ assert.equal(canAccess(grant,'deliveries','delete'),false)
+ assert.equal(canAccess(grant,'families','read'),true)
+ assert.equal(canAccess(grant,'families','read',{schoolBound:true,schoolCode:'ESC-002'}),false)
+ assert.equal(canAccess(grant,'assessments','change_status'),false)
+})
