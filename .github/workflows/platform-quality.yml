@@ -58,3 +58,8 @@ jobs:
         run: npx --yes firebase-tools@14.24.0 emulators:exec --project demo-ftb-test --only firestore --config firebase.emulator.json "node --test tests/firestore-emulator.test.mjs tests/material-delivery-emulator.test.mjs tests/audit-emulator.test.mjs"
       - name: Test candidate Firestore public and private access rules
         run: npx --yes firebase-tools@14.24.0 emulators:exec --project demo-ftb-test --only firestore --config tests/firebase/candidate-emulator.json "node --test tests/firebase-candidate-emulator.test.mjs"
+      - name: Test candidate Storage Rules for existing shared bucket
+        env:
+          FIREBASE_STORAGE_EMULATOR_HOST: 127.0.0.1:9199
+          STORAGE_EMULATOR_HOST: 127.0.0.1:9199
+        run: npx --yes firebase-tools@14.24.0 emulators:exec --project demo-ftb-test --only storage --config tests/firebase/candidate-storage-emulator.json "node --test tests/firebase-candidate-storage-emulator.test.mjs"

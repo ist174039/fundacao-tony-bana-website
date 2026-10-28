@@ -1,0 +1,32 @@
+// CANDIDATE for TEST only — do not deploy without inventory of existing files.
+// Mirrors the four public-media folders used by the Foundation's server API.
+// No general allow read/write wildcard is permitted.
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /membros/{path=**} {
+      allow get: if true;
+      allow list, write: if false;
+    }
+    match /noticias/{path=**} {
+      allow get: if true;
+      allow list, write: if false;
+    }
+    match /parceiros/{path=**} {
+      allow get: if true;
+      allow list, write: if false;
+    }
+    match /carrossel/{path=**} {
+      allow get: if true;
+      allow list, write: if false;
+    }
+    // All document operations pass through authenticated Next.js Admin routes.
+    match /private/documents/{path=**} {
+      allow read, write: if false;
+    }
+    // No direct access to any other object.
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}
