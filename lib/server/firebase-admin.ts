@@ -103,6 +103,22 @@ export async function resolveAreaAccess(request: Request) {
     return { access: { role: "admin" as const, uid: decoded.uid }, status: 200, error: null }
   }
 
+  if (process.env.FTB_GRANULAR_ACCESS_ENABLED === "true") {
+    try {
+      const { validateAccessGrant, EMPTY_ACCESS_GRANT } = await import("./access-grants.mjs")
+      const grantRecord = await getFirebaseAdminFirestore().collection("area_user_access").doc(decoded.uid).get()
+      const raw = grantRecord.exists ? {
+        profiles: grantRecord.get("profiles"), schoolCodes: grantRecord.get("schoolCodes"), overrides: grantRecord.get("overrides")
+      } : EMPTY_ACCESS_GRANT
+      const grant = validateAccessGrant(raw)
+      if (grant.profiles.length || grant.overrides.some((item: { allow: boolean }) => item.allow)) {
+        return { access: { role: "operational" as const, uid: decoded.uid }, status: 200, error: null }
+      }
+    } catch {
+      return { access: null, status: 503, error: "Não foi possível validar as permissões operacionais." } as const
+    }
+  }
+
   try {
     const socios = await getFirebaseAdminFirestore()
       .collection("area_socios")
