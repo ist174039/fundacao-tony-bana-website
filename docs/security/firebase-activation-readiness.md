@@ -5,10 +5,19 @@ As quatro variáveis de cifragem estão presentes na Vercel production (somente 
 
 **As regras reais Firestore e Storage não foram consultadas.** O plugin Firebase está instalado, mas não há uma operação disponível nesta sessão para obter as regras publicadas. Não se pode interpretar testes do Emulator como prova da configuração de produção.
 
+## O Firebase Storage já existente pode ser usado
+
+Não é obrigatório contratar nem criar outro serviço de Storage. A plataforma já utiliza `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` para imagens públicas e o módulo de documentos já guarda objetos na pasta `private/documents/`. São possíveis duas arquiteturas:
+
+- **Preferencial:** um bucket privado dedicado, diferente do bucket público.
+- **Reutilização controlada:** definir `FTB_DOCUMENTS_BUCKET` com o nome do bucket existente e só depois de uma auditoria específica definir `FTB_SHARED_DOCUMENTS_STORAGE_VERIFIED=true`. Esta atestação exige regras Storage publicadas que neguem leitura/escrita direta ao caminho `private/documents/{allPaths=**}`, nenhum `allow` mais amplo que permita contornar a negação, ausência de GCS public IAM/ACL para os objetos privados, e testes de download sem autenticação, com autenticação de outro utilizador e com tokens antigos. Não criar `getDownloadURL` nem download tokens para ficheiros privados; servir exclusivamente via API autenticada.
+
+O bucket existente ser utilizado para imagens públicas **não constitui prova** de isolamento da pasta documental. Não ativar nem simular aprovação destas condições sem consultar as regras REAIS e o IAM atual.
+
 ## Duas condições adicionais de negação por omissão
 - `FTB_FIRESTORE_RULES_VERIFIED=true`: atestação manual, apenas após exportação, revisão e testes das Firestore Rules reais do ambiente correspondente.
 - `FTB_STORAGE_RULES_VERIFIED=true`: atestação manual, específica da gestão documental, após revisão das regras reais de Storage do bucket privado.
-- `FTB_DOCUMENTS_BUCKET`: bucket GCS privado e dedicado, **diferente** do bucket público `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`. Não utilizar o bucket público para ficheiros de alunos ou equipas.
+- `FTB_DOCUMENTS_BUCKET`: preferir bucket GCS dedicado; pode apontar ao bucket atual apenas com `FTB_SHARED_DOCUMENTS_STORAGE_VERIFIED=true` após testes de isolamento reais da pasta `private/documents/` e verificação IAM/Rules.
 - As atestações não constituem prova por si só. Nunca configurá-las apenas para fazer desaparecer um bloqueio do painel.
 
 Além destas condições, continuam necessárias as flags técnicas por módulo (OFF por defeito), cifragem, Firebase Admin e autorização operacional explícita na área Configuração. Não alterar as flags de produção nem criar registos de ativação durante esta revisão.

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {isDistinctPrivateBucket,reviewBlockers,environmentReviewBlockers} from '../lib/server/security-readiness.mjs'
+import {isDistinctPrivateBucket,documentBucketIsAcceptable,reviewBlockers,environmentReviewBlockers} from '../lib/server/security-readiness.mjs'
 test('All operational modules fail closed without Firebase Rules review',()=>{
  for(const id of ['schools','students','material','deliveries','documents']){
   assert.match(reviewBlockers(id).join(' '),/Firestore/)
@@ -20,4 +20,13 @@ test('Missing review attestations cannot be bypassed by installing encryption ke
  assert.equal(environmentReviewBlockers('documents',env).length,2)
  assert.equal(environmentReviewBlockers('documents',{...env,FTB_FIRESTORE_RULES_VERIFIED:'true'}).length,1)
  assert.equal(environmentReviewBlockers('documents',{...env,FTB_FIRESTORE_RULES_VERIFIED:'true',FTB_STORAGE_RULES_VERIFIED:'true'}).length,0)
+})
+
+test('Existing Firebase Storage is reusable only after explicit private-prefix review',()=>{
+ const existing='fundacao-public.firebasestorage.app'
+ const base={firestoreRulesReviewed:true,storageRulesReviewed:true,privateBucket:existing,publicBucket:existing}
+ assert.equal(documentBucketIsAcceptable(base),false)
+ assert.match(reviewBlockers('documents',base).join(' '),/private\/documents/)
+ assert.equal(documentBucketIsAcceptable({...base,sharedBucketReviewed:true}),true)
+ assert.equal(reviewBlockers('documents',{...base,sharedBucketReviewed:true}).length,0)
 })
