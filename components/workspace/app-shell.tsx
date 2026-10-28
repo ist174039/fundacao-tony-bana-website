@@ -39,15 +39,15 @@ export function WorkspaceTemplate({ product, title, email, onLogout, sidebar, ch
         <Button variant="ghost" size="sm" onClick={onLogout} aria-label="Terminar sessão" className="px-2 sm:px-3"><LogOut className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Sair</span></Button>
       </div>
     </header>
-    <div className="mx-auto grid w-full max-w-[1800px] min-w-0 flex-1 lg:min-h-0 lg:flex-1 lg:grid-cols-[15rem_minmax(0,1fr)]">
-      <aside className="hidden border-b bg-card/60 px-3 py-2 lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:overflow-y-auto lg:border-b-0 lg:border-r lg:px-3 lg:py-5">
+    <div className="mx-auto grid w-full max-w-[1800px] min-w-0 flex-1 lg:min-h-0 lg:flex-1 lg:grid-cols-[17rem_minmax(0,1fr)] xl:grid-cols-[18rem_minmax(0,1fr)]">
+      <aside className="hidden lg:block border-b bg-card/60 px-3 py-2 lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:overflow-y-auto lg:border-b-0 lg:border-r lg:px-3 lg:py-5">
         <div className="mb-2 hidden items-center gap-2 px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground lg:flex"><span className="h-1.5 w-1.5 rounded-full bg-primary"/>Navegação</div>
         {sidebar}
         {search && <div className="relative mt-4 hidden lg:block"><Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"/><Input value={search.value} onChange={(event) => search.onChange(event.target.value)} placeholder={search.placeholder} className="h-9 pl-9 text-xs" aria-label={search.placeholder}/></div>}
         <div className="mt-6 hidden rounded-lg border bg-background p-3 text-xs leading-5 text-muted-foreground lg:block"><p className="font-medium text-foreground">{product}</p><p className="mt-1">Fundação Tony Bana · espaço de trabalho</p></div>
       </aside>
       <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}><SheetContent side="left" className="w-[min(88vw,22rem)] overflow-y-auto p-4 lg:hidden"><SheetHeader><SheetTitle className="text-left">{product}</SheetTitle></SheetHeader><nav aria-label="Navegação principal" className="mobile-workspace-nav mt-5" onClickCapture={event=>{if((event.target as HTMLElement).closest('[role="tab"]'))setMobileNavOpen(false)}}>{sidebar}</nav>{search&&<div className="mt-5"><Input value={search.value} onChange={event=>search.onChange(event.target.value)} placeholder={search.placeholder} aria-label={search.placeholder}/></div>}</SheetContent></Sheet>
-      <main className="min-w-0 w-full px-3 py-4 sm:px-6 sm:py-6 lg:h-[calc(100vh-4rem)] lg:overflow-y-auto lg:px-8 lg:py-7">{children}</main>
+      <main className="min-w-0 w-full px-3 py-4 sm:px-6 sm:py-6 lg:h-[calc(100vh-4rem)] lg:overflow-y-auto lg:px-6 lg:py-7 xl:px-8">{children}</main>
     </div>
   </div>
 }
