@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   if(!(await requireAreaAdmin(request))) return NextResponse.json({error:'Sem permissão.'},{status:403})
   try {
     const docs=await getFirebaseAdminFirestore().collection('area_material_stock_lots').limit(500).get()
-    const lotes=docs.docs.filter(d=>Number(d.get('quantidadeDisponivel'))>0).map(d=>({id:d.id,...openStockLot(d.data(),d.ref.path)}))
+    const lotes=docs.docs.filter(d=>Number(d.get('quantidadeDisponivel'))-Number(d.get('quantidadeReservada')||0)>0).map(d=>({id:d.id,...openStockLot(d.data(),d.ref.path),quantidadeFisica:Number(d.get('quantidadeDisponivel')),quantidadeReservada:Number(d.get('quantidadeReservada')||0),quantidadeDisponivel:Math.round((Number(d.get('quantidadeDisponivel'))-Number(d.get('quantidadeReservada')||0))*1000)/1000}))
     return NextResponse.json({lotes})
   } catch { return NextResponse.json({error:'Não foi possível consultar o stock.'},{status:500}) }
 }
