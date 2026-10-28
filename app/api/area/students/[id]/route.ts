@@ -1,3 +1,4 @@
+import {appendAuditEvent as auditArchive} from '@/lib/server/audit-log.mjs'
 import {operationalActor,permittedSchool} from '@/lib/server/operational-authorization'
 import { appendAuditEvent } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from 'next/server'
@@ -36,4 +37,28 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     if (error instanceof StudentInputError || error instanceof SyntaxError) return NextResponse.json({ error: error.message }, { status: 400 })
     return NextResponse.json({ error: 'Não foi possível atualizar o aluno.' }, { status: 500 })
   }
+}
+
+export async function DELETE(request:Request,{params}:{params:{id:string}}){
+ if(!(await isOperationalModuleEnabled('students'))||process.env.FTB_STUDENTS_ENABLED!=='true'||!isFirebaseAdminConfigured()||!isFieldEncryptionConfigured())return NextResponse.json({error:'Módulo indisponível.'},{status:503})
+ const id=params.id
+ if(!/^[a-f0-9]{64}$/.test(id))return NextResponse.json({error:'Identificador inválido.'},{status:400})
+ const actor=await operationalActor(request,'students','delete')
+ if(!actor)return NextResponse.json({error:'Sem permissão para arquivar.'},{status:403})
+ try{
+  const db=getFirebaseAdminFirestore(),ref=db.collection('area_students').doc(id)
+  const result=await db.runTransaction(async tx=>{
+    const before=await tx.get(ref)
+    if(!before.exists)return 'missing'
+    if(!permittedSchool(actor,before.get('escolaCodigo')))return 'denied'
+    if(before.get('archivedAt'))return 'already'
+    const at=new Date().toISOString(),change={archivedAt:at,archivedBy:actor.uid,updatedAt:at}
+    tx.update(ref,change)
+    auditArchive(tx,db,{module:'students',action:'update',recordPath:ref.path,actorUid:actor.uid,before:before.data(),after:{...before.data(),...change},at})
+    return 'archived'
+  })
+  if(result==='missing')return NextResponse.json({error:'Registo não encontrado.'},{status:404})
+  if(result==='denied')return NextResponse.json({error:'Sem acesso.'},{status:403})
+  return NextResponse.json({status:result})
+ }catch{return NextResponse.json({error:'Não foi possível arquivar.'},{status:500})}
 }

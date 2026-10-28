@@ -22,7 +22,7 @@ export async function GET(request: Request) {
   if (!admin) return NextResponse.json({ error: "Acesso não autorizado." }, { status: 403 })
   try {
     const data = await getFirebaseAdminFirestore().collection(collectionName).orderBy("nome").limit(200).get()
-    return NextResponse.json({ escolas: data.docs.filter(doc=>permittedSchool(admin,doc.id)).map((doc) => ({ id: doc.id, ...openSchool(doc.data(), doc.ref.path) })) })
+    return NextResponse.json({ escolas: data.docs.filter(doc=>!doc.get('archivedAt')&&permittedSchool(admin,doc.id)).map((doc) => ({ id: doc.id, ...openSchool(doc.data(), doc.ref.path) })) })
   } catch {
     return NextResponse.json({ error: "Não foi possível consultar escolas." }, { status: 500 })
   }
