@@ -32,8 +32,9 @@ export default function AreaPage() {
   const [accessError, setAccessError] = useState("")
   const [moduleStates,setModuleStates] = useState<Record<string,boolean> | null>(null)
   const [financePermissions,setFinancePermissions] = useState<{read:boolean;create:boolean}>({read:false,create:false})
+  const [canReadReports,setCanReadReports]=useState(false)
   const onModuleChanged = useCallback((modules: Array<{id:string;enabled:boolean}>)=>setModuleStates(Object.fromEntries(modules.map(m=>[m.id,m.enabled]))),[])
-  useEffect(()=>{if(!role||role==="socio")return; if(role==="admin"){void areaFetch<{ modules: Array<{id:string;enabled:boolean}> }>("/api/area/config/modules",{cache:"no-store"}).then(r=>onModuleChanged(r.modules)).catch(()=>setModuleStates(null))}else{void areaFetch<{modules:Record<string,boolean>;access:{finance:{read:boolean;create:boolean}}}>("/api/area/workspace-access",{cache:"no-store"}).then(r=>{setModuleStates(r.modules);setFinancePermissions(r.access.finance)}).catch(()=>setModuleStates(null))}},[role,onModuleChanged])
+  useEffect(()=>{if(!role||role==="socio")return; if(role==="admin"){void areaFetch<{ modules: Array<{id:string;enabled:boolean}> }>("/api/area/config/modules",{cache:"no-store"}).then(r=>onModuleChanged(r.modules)).catch(()=>setModuleStates(null))}else{void areaFetch<{modules:Record<string,boolean>;access:{finance:{read:boolean;create:boolean};reports:{read:boolean}}}>("/api/area/workspace-access",{cache:"no-store"}).then(r=>{setModuleStates(r.modules);setFinancePermissions(r.access.finance);setCanReadReports(r.access.reports.read)}).catch(()=>setModuleStates(null))}},[role,onModuleChanged])
   const isModuleEnabled=(id:string)=>moduleStates?.[id]===true
 
   useEffect(() => onAuthChange((user) => {
@@ -66,7 +67,7 @@ export default function AreaPage() {
       {isAdmin && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="intentions"><ClipboardList className="mr-2 h-4 w-4"/>Contactos e pedidos</TabsTrigger>}
       {isAdmin && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary data-[state=active]:shadow-none" value="users"><ShieldCheck className="mr-2 h-4 w-4"/>Utilizadores</TabsTrigger>}
       {canOpenModule("schools") && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="schools"><School className="mr-2 h-4 w-4"/>Escolas</TabsTrigger>}
-      {isAdmin && isModuleEnabled("students") && isModuleEnabled("deliveries") && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="impact"><LayoutDashboard className="mr-2 h-4 w-4"/>Impacto social</TabsTrigger>}
+      {(isAdmin||canReadReports) && isModuleEnabled("students") && isModuleEnabled("deliveries") && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="impact"><LayoutDashboard className="mr-2 h-4 w-4"/>Impacto social</TabsTrigger>}
       {canOpenModule("students") && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="students"><GraduationCap className="mr-2 h-4 w-4"/>Alunos</TabsTrigger>}
       {canOpenModule("material") && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="material"><PackageCheck className="mr-2 h-4 w-4"/>Doações materiais</TabsTrigger>}
       {canOpenModule("deliveries") && <TabsTrigger className="justify-start whitespace-nowrap rounded-md px-3 py-2 text-sm" value="deliveries"><Truck className="mr-2 h-4 w-4"/>Entregas de doações</TabsTrigger>}
