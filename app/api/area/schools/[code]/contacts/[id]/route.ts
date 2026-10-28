@@ -43,7 +43,7 @@ export async function PATCH(request:Request,{params}:{params:{code:string;id:str
  }
 }
 export async function DELETE(request:Request,{params}:{params:{code:string;id:string}}) {
- const ctx=await context(request,params.code?.toUpperCase(),params.id)
+ const ctx=await context(request,params.code?.toUpperCase(),params.id,'delete')
  if ('error' in ctx)return ctx.error
  try{
   const result=await ctx.db.runTransaction(async tx=>{
