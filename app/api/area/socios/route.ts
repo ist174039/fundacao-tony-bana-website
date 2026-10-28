@@ -1,3 +1,4 @@
+import {operationalActor} from '@/lib/server/operational-authorization'
 import { auditedCreate } from '@/lib/server/audit-log.mjs'
 import { createHash } from "node:crypto"
 import { isFieldEncryptionConfigured } from "@/lib/server/field-encryption.mjs"
@@ -13,6 +14,7 @@ export async function GET(request: Request) {
   if (!isFirebaseAdminConfigured()) return NextResponse.json({ error: "A área ainda não está configurada no servidor." }, { status: 503 })
   const access = await requireAreaAccess(request)
   if (!access) return NextResponse.json({ error: "Esta conta não tem acesso à área de sócios." }, { status: 403 })
+  if(access.role==='operational'&&!(await operationalActor(request,'finance','read')))return NextResponse.json({error:'Sem autorização financeira.'},{status:403})
   try {
     const collection = getFirebaseAdminFirestore().collection(collectionName)
     if (access.role === "socio") {
@@ -25,7 +27,7 @@ export async function GET(request: Request) {
     const snapshot = await collection.limit(1000).get()
     const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...openMember(doc.data(), doc.ref.path) }))
     rows.sort((a, b) => String(a.nome || "").localeCompare(String(b.nome || ""), "pt"))
-    return NextResponse.json({ socios: rows })
+    return NextResponse.json({ socios: access.role==='operational'?rows.map(({id,nome,numeroSocio,estado})=>({id,nome,numeroSocio,estado})):rows })
   } catch (error) {
     const code = typeof error === "object" && error && "code" in error ? String(error.code) : "unknown"
     console.error("[area-socios] Firestore read failed", { code })
@@ -35,7 +37,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   if (!isFirebaseAdminConfigured()) return NextResponse.json({ error: "A área ainda não está configurada no servidor." }, { status: 503 })
-  const admin = await requireAreaAdmin(request)
+  const admin = await operationalActor(request,'finance','create')
   if (!admin) return NextResponse.json({ error: "Sem autorização para gerir sócios." }, { status: 403 })
   const secureMembers = process.env.FTB_SECURE_MEMBER_REGISTRY === "true"
   if (secureMembers && (!isFieldEncryptionConfigured() || !isMemberIndexConfigured()))
