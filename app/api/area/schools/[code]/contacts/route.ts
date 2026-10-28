@@ -33,7 +33,7 @@ export async function GET(request: Request, { params }: { params: { code: string
 
 export async function POST(request: Request, { params }: { params: { code: string } }) {
   if (!(await isOperationalModuleEnabled('schools'))) return NextResponse.json({ error: 'Módulo desativado na Configuração.' }, { status: 503 })
-  const context = await checkedContext(request, params.code?.toUpperCase())
+  const context = await checkedContext(request, params.code?.toUpperCase(), 'create')
   if (!context.school || !context.admin) return NextResponse.json({ error: context.error }, { status: context.status })
   try {
     const input = parseSchoolContactInput(await request.json())
