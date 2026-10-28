@@ -1,3 +1,4 @@
+import {operationalActor} from '@/lib/server/operational-authorization'
 import { auditedUpdate } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from "next/server"
 import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
@@ -12,9 +13,9 @@ export async function PATCH(request: Request, { params }: { params: { code: stri
   if (!(await isOperationalModuleEnabled('schools'))) return NextResponse.json({ error: 'Módulo desativado na Configuração.' }, { status: 503 })
   if (process.env.FTB_SCHOOLS_ENABLED !== "true") return NextResponse.json({ error: "Módulo indisponível." }, { status: 503 })
   if (!isFirebaseAdminConfigured() || !isFieldEncryptionConfigured()) return NextResponse.json({ error: "Servidor ou cifragem não configurados." }, { status: 503 })
-  const admin = await requireAreaAdmin(request)
-  if (!admin) return NextResponse.json({ error: "Acesso não autorizado." }, { status: 403 })
   const code = params.code?.toUpperCase()
+  const admin = await operationalActor(request,'schools','update',code)
+  if (!admin) return NextResponse.json({ error: "Acesso não autorizado." }, { status: 403 })
   if (!isSchoolCode(code)) return NextResponse.json({ error: "Código de escola inválido." }, { status: 400 })
   try {
     const raw = await request.json()

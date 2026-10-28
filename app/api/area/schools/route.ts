@@ -1,3 +1,4 @@
+import { operationalActor, permittedSchool } from '@/lib/server/operational-authorization'
 import { auditedCreate } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from "next/server"
 import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
@@ -17,11 +18,11 @@ export async function GET(request: Request) {
   if (!(await isOperationalModuleEnabled('schools'))) return NextResponse.json({ error: 'Módulo desativado na Configuração.' }, { status: 503 })
   if (!enabled()) return NextResponse.json({ error: "O módulo de escolas ainda não está ativo." }, { status: 503 })
   if (!isFirebaseAdminConfigured() || !isFieldEncryptionConfigured()) return NextResponse.json({ error: "Servidor ou cifragem de dados pessoais não configurados." }, { status: 503 })
-  const admin = await requireAreaAdmin(request)
+  const admin = await operationalActor(request,'schools','read')
   if (!admin) return NextResponse.json({ error: "Acesso não autorizado." }, { status: 403 })
   try {
     const data = await getFirebaseAdminFirestore().collection(collectionName).orderBy("nome").limit(200).get()
-    return NextResponse.json({ escolas: data.docs.map((doc) => ({ id: doc.id, ...openSchool(doc.data(), doc.ref.path) })) })
+    return NextResponse.json({ escolas: data.docs.filter(doc=>permittedSchool(admin,doc.id)).map((doc) => ({ id: doc.id, ...openSchool(doc.data(), doc.ref.path) })) })
   } catch {
     return NextResponse.json({ error: "Não foi possível consultar escolas." }, { status: 500 })
   }
@@ -36,6 +37,8 @@ export async function POST(request: Request) {
   try {
     const body = parseSchoolInput(await request.json())
     const { codigo, ...school } = body
+    const actor=await operationalActor(request,'schools','create',codigo)
+    if(!actor)return NextResponse.json({error:'Sem permissão para esta escola.'},{status:403})
     const ref = getFirebaseAdminFirestore().collection(collectionName).doc(codigo)
     const now = new Date().toISOString()
     await auditedCreate(ref,{ ...sealSchool({ ...school, codigo }, ref.path), createdAt: now, updatedAt: now, createdBy: admin.uid, updatedBy: admin.uid },{module:'schools',actorUid:admin.uid})
