@@ -37,7 +37,7 @@ export async function GET(request:Request,{params}:{params:{id:string}}){
    selected=await ref.collection('revisions').doc(familyRevisionId(Number(requested))).get()
    if(!selected.exists)return fail('Revisão não encontrada.',404)
   }
-  return NextResponse.json({avaliacao:openFamilyAssessment(selected.data(),selected.ref.path),revisoes,currentRevision:latest},{headers:{'Cache-Control':'no-store'}})
+  return NextResponse.json({avaliacao:openFamilyAssessment(selected.data(),selected.ref.path),revisoes:revisions,currentRevision:latest},{headers:{'Cache-Control':'no-store'}})
  }catch{return fail('Não foi possível consultar a avaliação familiar.',500)}
 }
 export async function PUT(request:Request,{params}:{params:{id:string}}){
