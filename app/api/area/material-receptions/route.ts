@@ -1,3 +1,4 @@
+import {operationalActor} from '@/lib/server/operational-authorization'
 import { auditedCreate } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from "next/server"
 import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
@@ -17,7 +18,7 @@ export async function GET(request: Request) {
   if (!(await isOperationalModuleEnabled('material'))) return NextResponse.json({ error: 'Módulo desativado na Configuração.' }, { status: 503 })
   if (!active()) return denied(503, "A receção de material ainda não está ativa.")
   if (!isFirebaseAdminConfigured() || !isFieldEncryptionConfigured()) return denied(503, "Serviço ou cifragem indisponíveis.")
-  const identity = await requireAreaAdmin(request)
+  const identity = await operationalActor(request,'donations','read')
   if (!identity) return denied(403, "Sem permissão para consultar donativos materiais.")
   try {
     const documents = await getFirebaseAdminFirestore().collection(collection)
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
   if (!(await isOperationalModuleEnabled('material'))) return NextResponse.json({ error: 'Módulo desativado na Configuração.' }, { status: 503 })
   if (!active()) return denied(503, "A receção de material ainda não está ativa.")
   if (!isFirebaseAdminConfigured() || !isFieldEncryptionConfigured()) return denied(503, "Serviço ou cifragem indisponíveis.")
-  const identity = await requireAreaAdmin(request)
+  const identity = await operationalActor(request,'donations','create')
   if (!identity) return denied(403, "Sem permissão para registar donativos materiais.")
   try {
     const input = parseMaterialReception(await request.json())

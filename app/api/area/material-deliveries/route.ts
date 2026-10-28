@@ -1,3 +1,4 @@
+import {operationalActor,permittedSchool} from '@/lib/server/operational-authorization'
 import { appendAuditEvent } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from 'next/server'
 import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
@@ -8,26 +9,28 @@ import { MaterialDeliveryError, parseMaterialDelivery, sealDelivery, openDeliver
 export const runtime = 'nodejs'
 const enabled = () => process.env.FTB_MATERIAL_DELIVERIES_ENABLED === 'true'
 const fail = (error: string, status: number) => NextResponse.json({ error }, { status })
-async function authorize(request: Request) {
+async function authorize(request: Request,action:'read'|'create') {
   if (!enabled() || !isFirebaseAdminConfigured() || !isFieldEncryptionConfigured()) return null
-  return requireAreaAdmin(request)
+  return operationalActor(request,'deliveries',action)
 }
 export async function GET(request: Request) {
   if (!(await isOperationalModuleEnabled('deliveries'))) return NextResponse.json({ error: 'Módulo desativado na Configuração.' }, { status: 503 })
   if (!enabled() || !isFirebaseAdminConfigured() || !isFieldEncryptionConfigured()) return fail('Entregas de doações indisponíveis.',503)
-  if (!(await authorize(request))) return fail('Sem permissão.',403)
+  const actor=await authorize(request,'read')
+  if(!actor)return fail('Sem permissão.',403)
   try {
     const snapshot = await getFirebaseAdminFirestore().collection('area_material_deliveries').orderBy('criadoEm','desc').limit(200).get()
-    return NextResponse.json({entregas:snapshot.docs.map(doc=>({id:doc.id,...openDelivery(doc.data(),doc.ref.path)}))})
+    return NextResponse.json({entregas:snapshot.docs.filter(doc=>actor.admin||typeof doc.get('escolaCodigo')==='string'&&permittedSchool(actor,doc.get('escolaCodigo'))).map(doc=>({id:doc.id,...openDelivery(doc.data(),doc.ref.path)}))})
   } catch { return fail('Não foi possível consultar entregas.',500) }
 }
 export async function POST(request: Request) {
   if (!(await isOperationalModuleEnabled('deliveries'))) return NextResponse.json({ error: 'Módulo desativado na Configuração.' }, { status: 503 })
   if (!enabled() || !isFirebaseAdminConfigured() || !isFieldEncryptionConfigured()) return fail('Entregas de doações indisponíveis.',503)
-  const actor = await authorize(request)
+  const actor = await authorize(request,'create')
   if (!actor) return fail('Sem permissão.',403)
   try {
     const input = parseMaterialDelivery(await request.json())
+    if(!actor.admin&&(!input.escolaCodigo||!permittedSchool(actor,input.escolaCodigo)))return fail('Sem permissão para o destino da entrega.',403)
     const db = getFirebaseAdminFirestore()
     if (input.escolaCodigo) {
       const school = await db.collection('area_schools').doc(input.escolaCodigo).get()

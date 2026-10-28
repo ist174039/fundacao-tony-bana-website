@@ -1,3 +1,4 @@
+import {operationalActor} from '@/lib/server/operational-authorization'
 import { NextResponse } from "next/server"
 import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from "@/lib/server/firebase-admin"
@@ -17,7 +18,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
   if (!isFirebaseAdminConfigured() || !isFieldEncryptionConfigured())
     return NextResponse.json({ error: "Serviço indisponível." }, { status: 503 })
 
-  const admin = await requireAreaAdmin(request)
+  const admin = await operationalActor(request,'donations','change_status')
   if (!admin)
     return NextResponse.json({ error: "Sem autorização para confirmar receções." }, { status: 403 })
 

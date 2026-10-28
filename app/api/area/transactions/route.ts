@@ -1,3 +1,4 @@
+import {operationalActor} from '@/lib/server/operational-authorization'
 import { appendAuditEvent, auditedCreate } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from "next/server"
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAccess, requireAreaAdmin } from "@/lib/server/firebase-admin"
@@ -13,6 +14,7 @@ export async function GET(request: Request) {
   if (!isFirebaseAdminConfigured()) return NextResponse.json({ error: "A área ainda não está configurada no servidor." }, { status: 503 })
   const access = await requireAreaAccess(request)
   if (!access) return NextResponse.json({ error: "Esta conta não tem acesso aos recebimentos." }, { status: 403 })
+  if(access.role==='operational'&&!(await operationalActor(request,'finance','read')))return NextResponse.json({error:'Sem autorização financeira.'},{status:403})
   try {
     const collection = getFirebaseAdminFirestore().collection(collectionName)
     const snapshot = access.role === "socio"
@@ -31,7 +33,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   if (!isFirebaseAdminConfigured()) return NextResponse.json({ error: "A área ainda não está configurada no servidor." }, { status: 503 })
-  const admin = await requireAreaAdmin(request)
+  const admin = await operationalActor(request,'finance','create')
   if (!admin) return NextResponse.json({ error: "Sem autorização para registar recebimentos." }, { status: 403 })
   const secureFinance = process.env.FTB_ENCRYPT_FINANCIAL_PII === "true"
   if (secureFinance && !isFieldEncryptionConfigured()) return NextResponse.json({ error: "Cifragem financeira indisponível." }, { status: 503 })

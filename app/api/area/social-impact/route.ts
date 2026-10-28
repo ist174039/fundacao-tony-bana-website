@@ -1,3 +1,4 @@
+import {operationalActor} from '@/lib/server/operational-authorization'
 import {NextResponse} from 'next/server'
 import {getFirebaseAdminFirestore,isFirebaseAdminConfigured,requireAreaAdmin} from '@/lib/server/firebase-admin'
 import {isOperationalModuleEnabled} from '@/lib/server/module-settings'
@@ -5,7 +6,7 @@ export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export async function GET(request:Request){
  if(!isFirebaseAdminConfigured()||!(await isOperationalModuleEnabled('students'))||!(await isOperationalModuleEnabled('deliveries')))return NextResponse.json({error:'Indicadores indisponíveis.'},{status:503})
- if(!(await requireAreaAdmin(request)))return NextResponse.json({error:'Sem permissão.'},{status:403})
+ if(!(await operationalActor(request,'reports','read')))return NextResponse.json({error:'Sem permissão.'},{status:403})
  try{
   const db=getFirebaseAdminFirestore()
   const keys=['area_students','area_families','area_family_assessments','area_material_deliveries','area_material_stock_lots','area_schools']

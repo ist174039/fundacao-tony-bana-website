@@ -33,7 +33,7 @@ export function UserAccessEditor({uid, isAdmin}: {uid:string;isAdmin:boolean}) {
   const [available,setAvailable]=useState(true)
   const load=useCallback(async()=>{
     try {const v=await areaFetch<{access:Access;revision:number}>(`/api/area/users/${encodeURIComponent(uid)}/access`)
-      setRecord(v.access);setRevision(v.revision);setAvailable(true);setError('');void areaFetch<{escolas:Array<{codigo:string;nome:string;estado:string}>}>('/api/area/schools').then(result=>setSchools(result.escolas.filter(s=>s.estado==='ativa'))).catch(()=>setSchools([]))
+      setRecord(v.access);setRevision(v.revision);setAvailable(true);setError('');void areaFetch<{escolas:Array<{codigo:string;nome:string;estado:string}>}>('/api/area/users/access-scopes').then(result=>setSchools(result.escolas.filter(s=>s.estado==='ativa'))).catch(()=>setSchools([]))
     }catch(e){setAvailable(false);setError(e instanceof Error?e.message:'Gestão de permissões indisponível.')}
   },[uid])
   useEffect(()=>{void load()},[load])

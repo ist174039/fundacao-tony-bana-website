@@ -1,3 +1,4 @@
+import {operationalActor,permittedSchool} from '@/lib/server/operational-authorization'
 import {NextResponse} from 'next/server'
 import {isOperationalModuleEnabled} from '@/lib/server/module-settings'
 import {getFirebaseAdminFirestore,isFirebaseAdminConfigured,requireAreaAdmin} from '@/lib/server/firebase-admin'
@@ -7,9 +8,12 @@ import {appendAuditEvent} from '@/lib/server/audit-log.mjs'
 export const runtime='nodejs'
 export async function POST(request:Request,{params}:{params:{id:string}}){
  if(!(await isOperationalModuleEnabled('deliveries'))||process.env.FTB_MATERIAL_DELIVERIES_ENABLED!=='true'||!isFirebaseAdminConfigured()||!isFieldEncryptionConfigured())return NextResponse.json({error:'Entregas indisponíveis.'},{status:503})
- const admin=await requireAreaAdmin(request)
+ const admin=await operationalActor(request,'deliveries','change_status')
  if(!admin)return NextResponse.json({error:'Sem permissão.'},{status:403})
  if(!/^[A-Za-z0-9]{12,40}$/.test(params.id))return NextResponse.json({error:'Identificador inválido.'},{status:400})
+ const target=await getFirebaseAdminFirestore().collection('area_material_deliveries').doc(params.id).get()
+ if(!target.exists)return NextResponse.json({error:'Entrega inexistente.'},{status:404})
+ if(!admin.admin&&(!target.get('escolaCodigo')||!permittedSchool(admin,target.get('escolaCodigo'))))return NextResponse.json({error:'Sem acesso ao destino.'},{status:403})
  try{
   const body=await request.json()
   if(typeof body?.reason!=='string'||body.reason.trim().length<5||body.reason.length>500)return NextResponse.json({error:'Indica o motivo do cancelamento.'},{status:400})

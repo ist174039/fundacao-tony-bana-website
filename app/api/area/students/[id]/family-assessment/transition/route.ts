@@ -1,3 +1,4 @@
+import {operationalActor} from '@/lib/server/operational-authorization'
 import {NextResponse} from 'next/server'
 import {isOperationalModuleEnabled} from '@/lib/server/module-settings'
 import {getFirebaseAdminFirestore,isFirebaseAdminConfigured,requireAreaAdmin} from '@/lib/server/firebase-admin'
@@ -7,12 +8,15 @@ import {transitionAssessment,AssessmentValidationError} from '@/lib/server/socia
 export const runtime='nodejs'
 export async function POST(request:Request,{params}:{params:{id:string}}){
  if(!(await isOperationalModuleEnabled('students'))||!isFirebaseAdminConfigured()||!isFieldEncryptionConfigured())return NextResponse.json({error:'Avaliações indisponíveis.'},{status:503})
- const admin=await requireAreaAdmin(request)
- if(!admin)return NextResponse.json({error:'Sem permissão.'},{status:403})
  if(!/^[a-f0-9]{64}$/.test(params.id))return NextResponse.json({error:'Aluno inválido.'},{status:400})
  try{
   const body=await request.json()
   if(typeof body?.next!=='string'||typeof body?.reason!=='string'||body.reason.length>1000)return NextResponse.json({error:'Pedido inválido.'},{status:400})
+  const student=await getFirebaseAdminFirestore().collection('area_students').doc(params.id).get()
+  if(!student.exists)return NextResponse.json({error:'Aluno não encontrado.'},{status:404})
+  const action=['aprovado','recusado'].includes(body.next)?'approve':'change_status'
+  const admin=await operationalActor(request,'assessments',action,student.get('escolaCodigo'))
+  if(!admin)return NextResponse.json({error:'Sem permissão para alterar este estado.'},{status:403})
   const db=getFirebaseAdminFirestore(),ref=db.collection('area_family_assessments').doc(params.id)
   const result=await db.runTransaction(async tx=>{
    const before=await tx.get(ref)

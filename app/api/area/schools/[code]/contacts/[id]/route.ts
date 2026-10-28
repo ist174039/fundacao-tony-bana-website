@@ -1,3 +1,4 @@
+import {operationalActor} from '@/lib/server/operational-authorization'
 import { NextResponse } from 'next/server'
 import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
 import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from '@/lib/server/firebase-admin'
@@ -8,10 +9,10 @@ import { appendAuditEvent } from '@/lib/server/audit-log.mjs'
 
 export const runtime = 'nodejs'
 const CONTACT_ID = /^[a-zA-Z0-9_-]{8,100}$/
-async function context(request: Request, code: string, id: string) {
+async function context(request: Request, code: string, id: string, action:'update'|'delete') {
  if (!(await isOperationalModuleEnabled('schools')) || process.env.FTB_SCHOOLS_ENABLED !== 'true' || !isFirebaseAdminConfigured() || !isFieldEncryptionConfigured())
   return { error: NextResponse.json({error:'Módulo de escolas indisponível.'},{status:503}) }
- const admin = await requireAreaAdmin(request)
+ const admin = await operationalActor(request,'schools',action,code)
  if (!admin) return {error:NextResponse.json({error:'Acesso não autorizado.'},{status:403})}
  if (!isSchoolCode(code) || !CONTACT_ID.test(id)) return {error:NextResponse.json({error:'Identificador inválido.'},{status:400})}
  const db = getFirebaseAdminFirestore()
@@ -20,7 +21,7 @@ async function context(request: Request, code: string, id: string) {
  return {admin,db,school,ref}
 }
 export async function PATCH(request:Request,{params}:{params:{code:string;id:string}}) {
- const ctx=await context(request,params.code?.toUpperCase(),params.id)
+ const ctx=await context(request,params.code?.toUpperCase(),params.id,'update')
  if ('error' in ctx) return ctx.error
  try {
   const raw=await request.json()
@@ -42,7 +43,7 @@ export async function PATCH(request:Request,{params}:{params:{code:string;id:str
  }
 }
 export async function DELETE(request:Request,{params}:{params:{code:string;id:string}}) {
- const ctx=await context(request,params.code?.toUpperCase(),params.id)
+ const ctx=await context(request,params.code?.toUpperCase(),params.id,'delete')
  if ('error' in ctx)return ctx.error
  try{
   const result=await ctx.db.runTransaction(async tx=>{
