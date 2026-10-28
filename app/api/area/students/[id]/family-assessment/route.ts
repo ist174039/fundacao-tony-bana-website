@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server'
 import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
-import { getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from '@/lib/server/firebase-admin'
+import { getFirebaseAdminAuth, getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from '@/lib/server/firebase-admin'
 import { encryptJson, decryptJson, isFieldEncryptionConfigured } from '@/lib/server/field-encryption.mjs'
 import { appendAuditEvent } from '@/lib/server/audit-log.mjs'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 const studentId = /^[a-f0-9]{64}$/
-const fields = ['dataVisita','voluntario','representante','comunidade','telefone','pessoas','adultos','criancas','idosos','deficiencia','frequentaEscola','motivoFaltaEscola','doencaCronica','tratamentoEspecializado','medicacaoContinua','observacoesSaude','pessoasEmpregadas','fonteRendimento','nivelRendimento','refeicoesDia','faltaAlimentos','tipoMoradia','materialConstrucao','casaBanho','aguaPotavel','eletricidade','condicaoHabitacao','higiene','situacaoGeral','recomendacao','justificacao','observacoesGerais'] as const
+const fields = ['dataVisita','voluntario','voluntarioUid','representante','comunidade','telefone','pessoas','adultos','criancas','idosos','deficiencia','frequentaEscola','motivoFaltaEscola','doencaCronica','tratamentoEspecializado','medicacaoContinua','observacoesSaude','pessoasEmpregadas','fonteRendimento','nivelRendimento','refeicoesDia','faltaAlimentos','tipoMoradia','materialConstrucao','casaBanho','aguaPotavel','eletricidade','condicaoHabitacao','higiene','situacaoGeral','recomendacao','justificacao','observacoesGerais'] as const
 function validate(value: unknown) {
  if(!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Ficha inválida.')
  const raw=value as Record<string,unknown>, result:Record<string,string>={}
@@ -18,7 +18,7 @@ function validate(value: unknown) {
   result[field]=item.trim()
  }
  if(!result.dataVisita || !/^20\d{2}-\d{2}-\d{2}$/.test(result.dataVisita) || Number.isNaN(Date.parse(result.dataVisita))) throw new Error('Indica a data da avaliação.')
- if(!result.representante || !result.voluntario) throw new Error('Indica o representante e o voluntário.')
+ if(!result.representante || !result.voluntarioUid) throw new Error('Indica o representante e seleciona o voluntário.')
  return result
 }
 async function authorize(request:Request,id:string) {
@@ -43,6 +43,10 @@ export async function PUT(request:Request,{params}:{params:{id:string}}){
  const access=await authorize(request,params.id);if('error' in access)return access.error
  try {
   const value=validate(await request.json()),db=getFirebaseAdminFirestore(),student=db.collection('area_students').doc(params.id),ref=db.collection('area_family_assessments').doc(params.id)
+  let volunteer
+  try { volunteer=await getFirebaseAdminAuth().getUser(value.voluntarioUid) } catch { return NextResponse.json({error:'O voluntário selecionado não existe.'},{status:422}) }
+  if(volunteer.disabled)return NextResponse.json({error:'O utilizador selecionado está desativado.'},{status:422})
+  value.voluntario=(volunteer.displayName||volunteer.email||'Utilizador sem nome').trim()
   const result=await db.runTransaction(async tx=>{
    const [studentSnap,previous]=await Promise.all([tx.get(student),tx.get(ref)])
    if(!studentSnap.exists)return 'missing'
