@@ -1,3 +1,4 @@
+import {operationalActor,permittedSchool} from '@/lib/server/operational-authorization'
 import { NextResponse } from 'next/server'
 import { isOperationalModuleEnabled } from '@/lib/server/module-settings'
 import { getFirebaseAdminAuth, getFirebaseAdminFirestore, isFirebaseAdminConfigured, requireAreaAdmin } from '@/lib/server/firebase-admin'
@@ -22,15 +23,17 @@ function validate(value: unknown) {
  if(!result.representante || !result.voluntarioUid) throw new Error('Indica o representante e seleciona o voluntário.')
  return result
 }
-async function authorize(request:Request,id:string) {
+async function authorize(request:Request,id:string,action:'read'|'update') {
  if(!(await isOperationalModuleEnabled('students')) || process.env.FTB_STUDENTS_ENABLED!=='true' || !isFirebaseAdminConfigured() || !isFieldEncryptionConfigured()) return {error:NextResponse.json({error:'Módulo indisponível.'},{status:503})}
  if(!studentId.test(id))return {error:NextResponse.json({error:'Aluno inválido.'},{status:400})}
- const admin=await requireAreaAdmin(request)
- if(!admin)return {error:NextResponse.json({error:'Sem permissão.'},{status:403})}
+ const student=await getFirebaseAdminFirestore().collection('area_students').doc(id).get()
+ if(!student.exists)return {error:NextResponse.json({error:'Aluno não encontrado.'},{status:404})}
+ const admin=await operationalActor(request,'assessments',action,student.get('escolaCodigo'))
+ if(!admin)return {error:NextResponse.json({error:'Sem permissão para esta avaliação.'},{status:403})}
  return {admin}
 }
 export async function GET(request:Request,{params}:{params:{id:string}}){
- const access=await authorize(request,params.id);if('error' in access)return access.error
+ const access=await authorize(request,params.id,'read');if('error' in access)return access.error
  const db=getFirebaseAdminFirestore(),student=db.collection('area_students').doc(params.id)
  try {
   if(!(await student.get()).exists)return NextResponse.json({error:'Aluno não encontrado.'},{status:404})
@@ -41,7 +44,7 @@ export async function GET(request:Request,{params}:{params:{id:string}}){
  } catch {return NextResponse.json({error:'Não foi possível consultar a avaliação.'},{status:500})}
 }
 export async function PUT(request:Request,{params}:{params:{id:string}}){
- const access=await authorize(request,params.id);if('error' in access)return access.error
+ const access=await authorize(request,params.id,'update');if('error' in access)return access.error
  try {
   const value=validateAssessmentSemantics(validate(await request.json())),db=getFirebaseAdminFirestore(),student=db.collection('area_students').doc(params.id),ref=db.collection('area_family_assessments').doc(params.id)
   let volunteer
