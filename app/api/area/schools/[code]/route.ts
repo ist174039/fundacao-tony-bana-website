@@ -43,6 +43,8 @@ export async function DELETE(request:Request,{params}:{params:{code:string}}){
  if(!actor)return NextResponse.json({error:'Sem permissão para arquivar.'},{status:403})
  try{
   const db=getFirebaseAdminFirestore(),ref=db.collection('area_schools').doc(id)
+  const dependencies=await db.collection('area_material_deliveries').where('escolaCodigo','==',id).get()
+  if(dependencies.docs.some(doc=>doc.get('estado')==='pendente'))return NextResponse.json({error:'Existem entregas pendentes para esta escola. Confirma ou cancela-as antes de arquivar.'},{status:409})
   const result=await db.runTransaction(async tx=>{
     const before=await tx.get(ref)
     if(!before.exists)return 'missing'
