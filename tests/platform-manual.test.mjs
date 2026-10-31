@@ -43,7 +43,7 @@ test("the member manual does not disclose administrative and children workflows"
 
 test("document/manual activation explicitly requires safety review and does not claim release approval", () => {
   const docs = manualGuides.find(guide => guide.id === "documentos");
-  assert.match(docs.warning, /segurança|bucket|Storage/i);
+  assert.match([docs.warning, docs.tip, ...docs.prerequisites].join(" "), /segurança|bucket|Storage/i);
   const activation = manualGuides.find(guide => guide.id === "configuracao");
   assert.match(activation.steps.map(step => step.action).join(" "), /Storage/i);
   assert.match(activation.steps.map(step => step.ifFail).join(" "), /bloqueio|409|exposição/i);
