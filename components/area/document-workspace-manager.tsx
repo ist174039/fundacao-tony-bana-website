@@ -83,7 +83,7 @@ export function DocumentWorkspaceManager(){
    setNotice(success+refreshWarning)
   }catch(e){setError(e instanceof Error?e.message:'Operação não concluída.')}
   finally{setBusy(false)}
- }}
+ }
  const parseUids=(text:string)=>text.split(/[\s,;]+/).map(v=>v.trim()).filter(Boolean)
  const createTeam=async(e:FormEvent)=>{e.preventDefault();await submit(()=>areaFetch<{team:Team}>('/api/area/document-teams',{method:'POST',body:JSON.stringify({name:teamName,memberUids})}),'Equipa criada. Agora podes organizar os documentos em pastas.',value=>{const result=value as {team:Team};setTeamId(result.team.id);setFolderId('all')})}
  const saveMembers=async(e:FormEvent)=>{e.preventDefault();const t=teams.find(t=>t.id===teamId);if(!t)return;await submit(()=>areaFetch(`/api/area/document-teams/${encodeURIComponent(t.id)}`,{method:'PATCH',body:JSON.stringify({name:t.name,memberUids,expectedRevision:t.revision})}),'Permissões da equipa atualizadas.')}
