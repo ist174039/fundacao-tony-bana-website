@@ -3,7 +3,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { useState, type ReactNode } from "react"
-import { ArrowLeft, ChevronDown, LogOut, Menu, Search, ShieldCheck } from "lucide-react"
+import { ArrowLeft, BookOpen, ChevronDown, LogOut, Menu, Search, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
@@ -34,6 +34,7 @@ export function WorkspaceTemplate({ product, title, email, onLogout, sidebar, ch
       <div className="flex shrink-0 items-center gap-2">
         <Button variant="outline" size="icon" className="lg:hidden" aria-label="Abrir navegação" aria-expanded={mobileNavOpen} onClick={()=>setMobileNavOpen(true)}><Menu className="h-5 w-5"/></Button>
         <Link href="/platform" className="hidden items-center gap-1.5 rounded-md px-2.5 py-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground lg:inline-flex"><ArrowLeft className="h-3.5 w-3.5"/>Espaços</Link>
+        <Link href="/platform/manual" className="inline-flex min-h-9 items-center gap-1.5 rounded-md px-2.5 py-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"><BookOpen className="h-4 w-4"/><span className="hidden sm:inline">Manual</span></Link>
         {headerLink && <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex"><Link href={headerLink.href}><ShieldCheck className="mr-2 h-4 w-4"/>{headerLink.label}</Link></Button>}
         <span title={email} className="hidden max-w-52 truncate rounded-md bg-muted px-2.5 py-1.5 text-xs text-muted-foreground xl:inline-block">{email}</span>
         <Button variant="ghost" size="sm" onClick={onLogout} aria-label="Terminar sessão" className="px-2 sm:px-3"><LogOut className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Sair</span></Button>
