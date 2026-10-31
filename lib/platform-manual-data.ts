@@ -510,7 +510,7 @@ export const manualGuides: ManualGuide[] = [
     "id": "documentos",
     "group": "Documentos",
     "title": "Equipas, pastas, documentos e versões",
-    "summary": "Criar área de equipa, guardar documentos e controlar partilha/versões.",
+    "summary": "Criar equipas, pastas, carregar, editar, versionar, arquivar e restaurar documentos com autorizações explícitas.",
     "roles": [
       "admin",
       "operational"
@@ -546,6 +546,24 @@ export const manualGuides: ManualGuide[] = [
         "ifFail": "Não coloques documentos de menores em pasta pública."
       },
       {
+        "title": "Editar documento",
+        "action": "Abre Detalhes e usa Editar documento para mudar o nome, escolher outra pasta da mesma equipa ou, como administrador, alterar a classificação.",
+        "expected": "Os metadados ficam atualizados sem alterar o ficheiro nem apagar o histórico de versões.",
+        "ifFail": "Se surgir erro de revisão, atualiza a lista e volta a conferir o documento antes de gravar."
+      },
+      {
+        "title": "Arquivar ou retirar",
+        "action": "Em Detalhes escolhe Arquivar documento, introduz a justificação e confirma a operação, desde que tenhas a permissão Apagar.",
+        "expected": "O documento deixa de estar disponível para consulta e download, mas os ficheiros permanecem privados e auditáveis.",
+        "ifFail": "Não apagues objetos diretamente no Storage: o arquivo evita perdas e permite recuperação controlada."
+      },
+      {
+        "title": "Restaurar documento",
+        "action": "Se és administrador, ativa Ver documentos arquivados, abre o registo e seleciona Restaurar documento com motivo obrigatório.",
+        "expected": "O documento volta a estar disponível segundo as permissões da equipa e do ficheiro, mantendo todas as versões.",
+        "ifFail": "Se a equipa ou as permissões mudaram, revê o acesso antes de permitir novas operações."
+      },
+      {
         "title": "Rever versão",
         "action": "Consulta histórico de versões e, quando permitido, carrega uma versão seguinte.",
         "expected": "A versão anterior permanece imutável e rastreável.",
@@ -564,7 +582,7 @@ export const manualGuides: ManualGuide[] = [
       "no": "Mantém a classificação mínima necessária e o âmbito da equipa."
     },
     "tip": "A existência do botão de upload não prova segurança efetiva do bucket.",
-    "warning": "Nunca publiques links de download privados em conversas ou relatórios."
+    "warning": "Nunca publiques links de download privados. Arquivar não significa eliminar fisicamente: a remoção definitiva requer política de retenção e aprovação."
   },
   {
     "id": "utilizadores",
