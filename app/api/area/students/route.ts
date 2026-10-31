@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   if(!reader)return fail('Sem permissão.',403)
   try {
     const rows = await getFirebaseAdminFirestore().collection('area_students').orderBy('createdAt', 'desc').limit(200).get()
-    return NextResponse.json({ alunos: rows.docs.filter(doc=>permittedSchool(reader,doc.get('escolaCodigo'))).map(doc => ({ id: doc.id, ...openStudent(doc.data(), doc.ref.path) })) })
+    return NextResponse.json({ alunos: rows.docs.filter(doc=>!doc.get('archivedAt')&&permittedSchool(reader,doc.get('escolaCodigo'))).map(doc => ({ id: doc.id, ...openStudent(doc.data(), doc.ref.path) })) })
   } catch { return fail('Não foi possível consultar alunos.', 500) }
 }
 export async function POST(request: Request) {
