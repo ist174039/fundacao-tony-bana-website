@@ -12,7 +12,7 @@ export async function GET(request:Request){
  if(!actor)return fail('Sem permissão.',403)
  try{
   const rows=await getFirebaseAdminFirestore().collection('area_doc_files').orderBy('updatedAt','desc').limit(300).get()
-  return NextResponse.json({documents:rows.docs.filter(d=>canOperateDocument(actor,d.data(),'read')).map(d=>({...documentView(d.ref,d.data()),permissions:{download:true,update:canOperateDocument(actor,d.data(),'update'),share:actor.admin}}))})
+  return NextResponse.json({documents:rows.docs.filter(d=>(actor.admin||d.get('status')!=='archived')&&canOperateDocument(actor,d.data(),'read')).map(d=>({...documentView(d.ref,d.data()),permissions:{download:d.get('status')!=='archived',update:d.get('status')!=='archived'&&canOperateDocument(actor,d.data(),'update'),delete:d.get('status')!=='archived'&&canOperateDocument(actor,d.data(),'delete'),restore:actor.admin&&d.get('status')==='archived',share:actor.admin&&d.get('status')!=='archived'}}))})
  }catch{return fail('Não foi possível consultar documentos.',500)}
 }
 export async function POST(request:Request){

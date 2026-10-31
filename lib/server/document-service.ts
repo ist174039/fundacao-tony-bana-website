@@ -41,7 +41,7 @@ export function canOperateDocument(actor:DocumentActor,doc:Record<string,any>,ac
  return canUseDocument({grant:actor.grant,actorUid:actor.uid,actorTeamIds:actor.teamIds,administrator:actor.admin},doc,doc.acl,action)
 }
 export function documentView(ref:{id:string;path:string},raw:Record<string,any>) {
- return {id:ref.id,name:openDocumentName(raw,ref.path),teamId:raw.teamId,folderId:raw.folderId,classification:raw.classification,mimeType:raw.mimeType,latestVersion:raw.latestVersion,revision:Number(raw.revision||0),updatedAt:raw.updatedAt,createdAt:raw.createdAt,createdBy:raw.createdBy,acl:raw.acl}
+ return {id:ref.id,name:openDocumentName(raw,ref.path),teamId:raw.teamId,folderId:raw.folderId,classification:raw.classification,mimeType:raw.mimeType,latestVersion:raw.latestVersion,status:raw.status||'active',revision:Number(raw.revision||0),updatedAt:raw.updatedAt,createdAt:raw.createdAt,createdBy:raw.createdBy,acl:raw.acl}
 }
 export async function verifyMemberUids(uids:string[]){
  for(const uid of uids){try{await getFirebaseAdminAuth().getUser(uid)}catch{throw new Error('Utilizador de equipa inexistente: verifica os identificadores.') }}
