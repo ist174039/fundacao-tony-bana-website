@@ -35,7 +35,7 @@ export async function resolveDocumentActor(request: Request):Promise<DocumentAct
  }catch{return null}
 }
 export function canReadTeam(actor:DocumentActor,teamId:string){return VALID_ID.test(teamId)&&(actor.admin||actor.teamIds.includes(teamId)&&canAccess(actor.grant,'documents','read'))}
-export function canWriteTeam(actor:DocumentActor,teamId:string,action:'create'|'update'='create'){return VALID_ID.test(teamId)&&(actor.admin||actor.teamIds.includes(teamId)&&canAccess(actor.grant,'documents',action))}
+export function canWriteTeam(actor:DocumentActor,teamId:string,action:'create'|'update'|'delete'='create'){return VALID_ID.test(teamId)&&(actor.admin||actor.teamIds.includes(teamId)&&canAccess(actor.grant,'documents',action))}
 export function canOperateDocument(actor:DocumentActor,doc:Record<string,any>,action:'read'|'create'|'update'|'approve'|'share'|'delete') {
  if(!actor.admin&&!actor.teamIds.includes(doc.teamId))return false
  return canUseDocument({grant:actor.grant,actorUid:actor.uid,actorTeamIds:actor.teamIds,administrator:actor.admin},doc,doc.acl,action)

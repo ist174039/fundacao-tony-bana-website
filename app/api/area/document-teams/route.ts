@@ -1,7 +1,7 @@
 import { auditedCreate } from '@/lib/server/audit-log.mjs'
 import { NextResponse } from 'next/server'
 import { getFirebaseAdminFirestore } from '@/lib/server/firebase-admin'
-import { resolveDocumentActor,documentFeatureReady,verifyMemberUids } from '@/lib/server/document-service'
+import { resolveDocumentActor,documentFeatureReady,canWriteTeam,verifyMemberUids } from '@/lib/server/document-service'
 import { parseDocumentTeam,DocumentWorkspaceError } from '@/lib/server/document-workspace.mjs'
 export const runtime='nodejs'
 export async function GET(request:Request){
@@ -12,7 +12,7 @@ export async function GET(request:Request){
   const db=getFirebaseAdminFirestore()
   const q=actor.admin?db.collection('area_doc_teams').limit(200):db.collection('area_doc_teams').where('memberUids','array-contains',actor.uid).limit(50)
   const docs=await q.get()
-  return NextResponse.json({admin:actor.admin,teams:docs.docs.map(d=>({id:d.id,name:d.get('name'),memberUids:actor.admin?d.get('memberUids'):undefined,revision:d.get('revision')}))})
+  return NextResponse.json({admin:actor.admin,teams:docs.docs.map(d=>({id:d.id,name:d.get('name'),memberUids:actor.admin?d.get('memberUids'):undefined,revision:d.get('revision'),permissions:{create:canWriteTeam(actor,d.id,'create'),update:canWriteTeam(actor,d.id,'update'),delete:canWriteTeam(actor,d.id,'delete')}}))})
  }catch{return NextResponse.json({error:'Não foi possível consultar equipas.'},{status:500})}
 }
 export async function POST(request:Request){

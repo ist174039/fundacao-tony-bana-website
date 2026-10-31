@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
-import { parseDocumentTeam,parseDocumentFolder,validateUploadBytes,parseFileUpload,sealDocumentName,openDocumentName,buildDocumentAcl,sanitizeShareAcl } from '../lib/server/document-workspace.mjs';
+import { parseDocumentTeam,parseDocumentFolder,parseDocumentFolderRename,validateUploadBytes,parseFileUpload,sealDocumentName,openDocumentName,buildDocumentAcl,sanitizeShareAcl } from '../lib/server/document-workspace.mjs';
 process.env.FTB_DATA_ENCRYPTION_KEYS_JSON=JSON.stringify({test:randomBytes(32).toString('base64')});
 process.env.FTB_DATA_ENCRYPTION_ACTIVE_KID='test';
 const pdf=Buffer.from('%PDF-1.7\n 0 1 obj\n');
@@ -31,4 +31,12 @@ test('sharing never crosses teams and confidential files require named users',()
  assert.throws(()=>sanitizeShareAcl({teamIds:['team_002'],userUids:['user_001']},d));
  assert.throws(()=>sanitizeShareAcl({teamIds:['team_001'],userUids:[]},d));
  assert.equal(sanitizeShareAcl({teamIds:['team_001'],userUids:['user_001']},d).userUids[0],'user_001');
+});
+
+test('folder rename only accepts a valid name and never changes its team or parent',()=>{
+ assert.deepEqual(parseDocumentFolderRename({name:'  Novos Documentos  '}),{name:'Novos Documentos'});
+ assert.throws(()=>parseDocumentFolderRename({name:''}),/Nome da pasta inválido/);
+ assert.throws(()=>parseDocumentFolderRename({name:'A'}),/Nome da pasta inválido/);
+ assert.throws(()=>parseDocumentFolderRename({name:'Relatórios',teamId:'other-team'}),/Pedido de alteração/);
+ assert.throws(()=>parseDocumentFolderRename({name:'Raiz/../privado'}),/Nome da pasta inválido/);
 });

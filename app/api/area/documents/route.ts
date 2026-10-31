@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { getFirebaseAdminFirestore } from '@/lib/server/firebase-admin'
 import { resolveDocumentActor,documentFeatureReady,canWriteTeam,canOperateDocument,documentView,privateDocumentBucket } from '@/lib/server/document-service'
 import { parseFileUpload,sealDocumentName,buildDocumentAcl,VALID_ID,MAX_FILE_SIZE,DocumentWorkspaceError } from '@/lib/server/document-workspace.mjs'
-import { nextDocumentVersion } from '@/lib/server/document-library.mjs'
+import { nextDocumentVersion, DocumentPolicyError } from '@/lib/server/document-library.mjs'
 export const runtime='nodejs'
 const fail=(error:string,status:number)=>NextResponse.json({error},{status})
 export async function GET(request:Request){
@@ -12,7 +12,7 @@ export async function GET(request:Request){
  if(!actor)return fail('Sem permissão.',403)
  try{
   const rows=await getFirebaseAdminFirestore().collection('area_doc_files').orderBy('updatedAt','desc').limit(300).get()
-  return NextResponse.json({documents:rows.docs.filter(d=>canOperateDocument(actor,d.data(),'read')).map(d=>documentView(d.ref,d.data()))})
+  return NextResponse.json({documents:rows.docs.filter(d=>canOperateDocument(actor,d.data(),'read')).map(d=>({...documentView(d.ref,d.data()),permissions:{download:true,update:canOperateDocument(actor,d.data(),'update'),share:actor.admin}}))})
  }catch{return fail('Não foi possível consultar documentos.',500)}
 }
 export async function POST(request:Request){
@@ -52,7 +52,7 @@ export async function POST(request:Request){
   return NextResponse.json({document:{id:ref.id,name:info.name,teamId,folderId,classification:info.classification,latestVersion:1}},{status:201})
  }catch(error){
   if(uploaded&&path)try{await privateDocumentBucket().file(path).delete({ignoreNotFound:true})}catch{}
-  if(error instanceof DocumentWorkspaceError||error instanceof SyntaxError)return fail(error.message,400)
+  if(error instanceof DocumentWorkspaceError||error instanceof DocumentPolicyError||error instanceof SyntaxError)return fail(error.message,400)
   return fail('Upload privado não concluído.',500)
  }
 }
