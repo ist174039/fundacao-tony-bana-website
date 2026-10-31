@@ -1,0 +1,62 @@
+name: Fundação Tony Bana — Playwright E2E
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ftb-e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser-e2e:
+    name: Playwright (desktop + mobile, fail-closed)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "true"
+      FTB_SCHOOLS_ENABLED: "false"
+      FTB_STUDENTS_ENABLED: "false"
+      FTB_MATERIAL_DONATIONS_ENABLED: "false"
+      FTB_MATERIAL_DELIVERIES_ENABLED: "false"
+      FTB_DOCUMENTS_ENABLED: "false"
+      FTB_FAMILY_ASSESSMENTS_ENABLED: "false"
+      FTB_GRANULAR_ACCESS_ENABLED: "false"
+      NEXT_PUBLIC_FIREBASE_API_KEY: "demo-e2e-key"
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "demo-ftb-e2e.firebaseapp.com"
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: "demo-ftb-e2e"
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "demo-ftb-e2e.appspot.com"
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "123456789012"
+      NEXT_PUBLIC_FIREBASE_APP_ID: "1:123456789012:web:0000000000000000000000"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install application dependencies
+        run: npm ci
+      - name: Install isolated Playwright dependencies
+        run: npm install --prefix e2e --no-audit --no-fund
+      - name: Install Chromium and system libraries
+        run: cd e2e && npx playwright install --with-deps chromium
+      - name: Build with dummy Firebase project and disabled operational modules
+        run: npm run build
+      - name: Run read-only browser and negative-access tests
+        run: npm test --prefix e2e
+      - name: Attach failure evidence (synthetic environment only)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ftb-playwright-${{ github.run_id }}
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
