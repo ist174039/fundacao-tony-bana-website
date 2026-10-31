@@ -35,13 +35,13 @@ export async function resolveDocumentActor(request: Request):Promise<DocumentAct
  }catch{return null}
 }
 export function canReadTeam(actor:DocumentActor,teamId:string){return VALID_ID.test(teamId)&&(actor.admin||actor.teamIds.includes(teamId)&&canAccess(actor.grant,'documents','read'))}
-export function canWriteTeam(actor:DocumentActor,teamId:string,action:'create'|'update'='create'){return VALID_ID.test(teamId)&&(actor.admin||actor.teamIds.includes(teamId)&&canAccess(actor.grant,'documents',action))}
+export function canWriteTeam(actor:DocumentActor,teamId:string,action:'create'|'update'|'delete'='create'){return VALID_ID.test(teamId)&&(actor.admin||actor.teamIds.includes(teamId)&&canAccess(actor.grant,'documents',action))}
 export function canOperateDocument(actor:DocumentActor,doc:Record<string,any>,action:'read'|'create'|'update'|'approve'|'share'|'delete') {
  if(!actor.admin&&!actor.teamIds.includes(doc.teamId))return false
  return canUseDocument({grant:actor.grant,actorUid:actor.uid,actorTeamIds:actor.teamIds,administrator:actor.admin},doc,doc.acl,action)
 }
 export function documentView(ref:{id:string;path:string},raw:Record<string,any>) {
- return {id:ref.id,name:openDocumentName(raw,ref.path),teamId:raw.teamId,folderId:raw.folderId,classification:raw.classification,mimeType:raw.mimeType,latestVersion:raw.latestVersion,revision:Number(raw.revision||0),updatedAt:raw.updatedAt,createdAt:raw.createdAt,createdBy:raw.createdBy,acl:raw.acl}
+ return {id:ref.id,name:openDocumentName(raw,ref.path),teamId:raw.teamId,folderId:raw.folderId,classification:raw.classification,mimeType:raw.mimeType,latestVersion:raw.latestVersion,status:raw.status||'active',revision:Number(raw.revision||0),updatedAt:raw.updatedAt,createdAt:raw.createdAt,createdBy:raw.createdBy,acl:raw.acl}
 }
 export async function verifyMemberUids(uids:string[]){
  for(const uid of uids){try{await getFirebaseAdminAuth().getUser(uid)}catch{throw new Error('Utilizador de equipa inexistente: verifica os identificadores.') }}

@@ -10,7 +10,7 @@ export async function GET(request:Request,{params}:{params:{id:string}}){
  if(!VALID_ID.test(params.id))return NextResponse.json({error:'Documento inválido.'},{status:400})
  try{
   const db=getFirebaseAdminFirestore(),ref=db.collection('area_doc_files').doc(params.id),doc=await ref.get()
-  if(!doc.exists||!canOperateDocument(actor,doc.data()!,'read'))return NextResponse.json({error:'Documento não encontrado ou sem acesso.'},{status:404})
+  if(!doc.exists||doc.get('status')==='archived'||!canOperateDocument(actor,doc.data()!,'read'))return NextResponse.json({error:'Documento não encontrado ou sem acesso.'},{status:404})
   const url=new URL(request.url),q=url.searchParams.get('version')
   const version=q?Number(q):doc.get('latestVersion')
   if(!Number.isInteger(version)||version<1||version>50||version>doc.get('latestVersion'))return NextResponse.json({error:'Versão inválida.'},{status:400})

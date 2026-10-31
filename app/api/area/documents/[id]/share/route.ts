@@ -15,6 +15,7 @@ export async function PUT(request:Request,{params}:{params:{id:string}}){
   if(!raw||typeof raw!=='object'||!Number.isInteger(raw.expectedRevision)||raw.expectedRevision<0)return NextResponse.json({error:'Pedido inválido.'},{status:400})
   const db=getFirebaseAdminFirestore(),ref=db.collection('area_doc_files').doc(params.id),doc=await ref.get()
   if(!doc.exists)return NextResponse.json({error:'Documento não encontrado.'},{status:404})
+  if(doc.get('status')==='archived')return NextResponse.json({error:'Documento arquivado.'},{status:409})
   const acl=sanitizeShareAcl(raw.acl,doc.data())
   const team=await db.collection('area_doc_teams').doc(doc.get('teamId')).get()
   if(!team.exists)return NextResponse.json({error:'Equipa inexistente.'},{status:409})
@@ -23,7 +24,7 @@ export async function PUT(request:Request,{params}:{params:{id:string}}){
   const audit=db.collection('area_doc_audit').doc()
   const changed=await db.runTransaction(async tx=>{
    const current=await tx.get(ref)
-   if(!current.exists||Number(current.get('revision')||0)!==raw.expectedRevision)return false
+   if(!current.exists||current.get('status')==='archived'||Number(current.get('revision')||0)!==raw.expectedRevision)return false
    const updated={acl,revision:raw.expectedRevision+1,updatedAt:new Date().toISOString(),updatedBy:actor.uid}
    tx.update(ref,updated)
    appendAuditEvent(tx,db,{module:'documents',action:'share',recordPath:ref.path,actorUid:actor.uid,before:current.data(),after:{...current.data(),...updated}})

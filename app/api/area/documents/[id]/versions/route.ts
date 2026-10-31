@@ -13,7 +13,7 @@ export async function GET(request:Request,{params}:{params:{id:string}}){
  if(!VALID_ID.test(params.id))return fail('Documento inválido.',400)
  try{
   const doc=await getFirebaseAdminFirestore().collection('area_doc_files').doc(params.id).get()
-  if(!doc.exists||!canOperateDocument(actor,doc.data()!,'read'))return fail('Documento não encontrado ou sem acesso.',404)
+  if(!doc.exists||doc.get('status')==='archived'||!canOperateDocument(actor,doc.data()!,'read'))return fail('Documento não encontrado ou sem acesso.',404)
   const versions=await doc.ref.collection('versions').orderBy('version','desc').limit(50).get()
   return NextResponse.json({versions:versions.docs.map(d=>({version:d.get('version'),sha256:d.get('sha256'),byteLength:d.get('byteLength'),createdAt:d.get('createdAt'),createdBy:d.get('createdBy')}))})
  }catch{return fail('Não foi possível consultar versões.',500)}
@@ -32,7 +32,7 @@ export async function POST(request:Request,{params}:{params:{id:string}}){
   if(file.size>MAX_FILE_SIZE||file.size<1)return fail('Ficheiro demasiado grande ou vazio.',413)
   const blob=Buffer.from(await file.arrayBuffer())
   const db=getFirebaseAdminFirestore(),ref=db.collection('area_doc_files').doc(params.id),snapshot=await ref.get()
-  if(!snapshot.exists||!canOperateDocument(actor,snapshot.data()!,'update'))return fail('Documento inexistente ou sem permissão.',404)
+  if(!snapshot.exists||snapshot.get('status')==='archived'||!canOperateDocument(actor,snapshot.data()!,'update'))return fail('Documento inexistente ou sem permissão.',404)
   if(snapshot.get('latestVersion')!==expected)return fail('Existe uma versão mais recente. Atualiza antes de carregar.',409)
   if(file.type!==snapshot.get('mimeType'))return fail('O formato de ficheiro tem de coincidir com a versão anterior.',400)
   validateUploadBytes(blob,file.type)
@@ -45,11 +45,11 @@ export async function POST(request:Request,{params}:{params:{id:string}}){
   const audit=db.collection('area_doc_audit').doc()
   const saved=await db.runTransaction(async tx=>{
    const current=await tx.get(ref)
-   if(!current.exists||current.get('latestVersion')!==expected)return false
+   if(!current.exists||current.get('status')==='archived'||current.get('latestVersion')!==expected||!canOperateDocument(actor,current.data()!,'update'))return false
    const versionRef=ref.collection('versions').doc(String(expected+1).padStart(6,'0'))
    tx.create(versionRef,version)
    appendAuditEvent(tx,db,{module:'document-versions',action:'create',recordPath:versionRef.path,actorUid:actor.uid,after:version,at:stamp})
-   const updated={latestVersion:expected+1,updatedAt:stamp,updatedBy:actor.uid}
+   const updated={latestVersion:expected+1,revision:Number(current.get('revision')||0)+1,updatedAt:stamp,updatedBy:actor.uid}
    tx.update(ref,updated)
    appendAuditEvent(tx,db,{module:'documents',action:'update',recordPath:ref.path,actorUid:actor.uid,before:current.data(),after:{...current.data(),...updated},at:stamp})
    tx.create(audit,{kind:'document-version-uploaded',documentId:params.id,actorUid:actor.uid,at:stamp,version:expected+1})
