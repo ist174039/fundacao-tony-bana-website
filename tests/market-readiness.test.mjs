@@ -61,3 +61,20 @@ test("all independently attested gates are eligible for human GO decision only",
   assert.deepEqual(result.blockers, [])
   // The program does NOT deploy, flip secrets, or assert a human decision happened.
 })
+
+test("malformed HTTPS evidence and credential-bearing URLs cannot approve gates", () => {
+  for (const invalid of ["https://", "https://?run=1", "https://reviewer:secret@example.com/evidence", "http://example.com/evidence", "not a URL"]) {
+    const m = attested()
+    m.gates[0].evidence_urls = [invalid]
+    const result = assessRelease(m, { candidateSha: sha, productionSha: sha })
+    assert.equal(result.status, "NO_GO", invalid)
+    assert.ok(result.blockers.includes("G01"), invalid)
+  }
+})
+
+test("valid HTTPS evidence links remain eligible for independent approval", () => {
+  const m = attested()
+  m.gates[0].evidence_urls = ["https://github.com/ist174039/fundacao-tony-bana-website/actions/runs/1?check=1"]
+  const result = assessRelease(m, { candidateSha: sha, productionSha: sha })
+  assert.equal(result.status, "GO_ELIGIBLE_PENDING_HUMAN_DECISION")
+})
