@@ -71,7 +71,9 @@ export function assessRelease(manifest, { candidateSha, productionSha } = {}) {
   }
 }
 
-function readArgs(args) {
+export function readArgs(args) {
+  const explicitCandidateSha = args.includes("--sha")
+  const explicitProductionSha = args.includes("--production-sha")
   let manifest = "release/market-readiness.json"
   let candidateSha = process.env.GITHUB_SHA || ""
   let productionSha = ""
@@ -82,6 +84,14 @@ function readArgs(args) {
     else if (args[i] === "--production-sha") productionSha = args[++i]
     else if (args[i] === "--enforce") enforce = true
     else if (args[i] !== "--report-only") throw new Error("Unknown argument: " + args[i])
+  }
+  // A release check must not fall back to stale baseline SHA values.
+  // In contrast, --report-only may use baseline values for diagnostic reporting.
+  if (enforce && (
+    !explicitCandidateSha || !explicitProductionSha ||
+    !SHA_PATTERN.test(candidateSha || "") || !SHA_PATTERN.test(productionSha || "")
+  )) {
+    throw new Error("Enforced release requires explicit full candidate and production SHAs")
   }
   return { manifest, candidateSha, productionSha, enforce }
 }
