@@ -15,12 +15,13 @@ export async function PUT(request:Request,{params}:{params:{id:string}}){
   const db=getFirebaseAdminFirestore(),student=db.collection('area_students').doc(params.id),family=db.collection('area_families').doc(familyId),link=db.collection('area_family_student_links').doc(params.id)
   const result=await db.runTransaction(async tx=>{
    const [studentDoc,familyDoc,previous]=await Promise.all([tx.get(student),tx.get(family),tx.get(link)])
-   if(!studentDoc.exists||!familyDoc.exists)return 'missing'
+   if(!studentDoc.exists||studentDoc.get('archivedAt')||!familyDoc.exists||familyDoc.get('archivedAt'))return 'missing'
    const old=previous.exists?previous.get('familyId'):null
    if(old&&old!==familyId)return 'conflict'
    if(old===familyId)return 'unchanged'
    const at=new Date().toISOString(),data={studentId:params.id,familyId,createdAt:at,createdBy:actor.uid}
    tx.create(link,data)
+   tx.update(family,{updatedAt:at,updatedBy:actor.uid})
    appendAuditEvent(tx,db,{module:'family-links',action:'create',recordPath:link.path,actorUid:actor.uid,after:data,at})
    return 'linked'
   })
@@ -37,4 +38,26 @@ export async function GET(request:Request,{params}:{params:{id:string}}){
   const doc=await getFirebaseAdminFirestore().collection('area_family_student_links').doc(params.id).get()
   return NextResponse.json({familyId:doc.exists?doc.get('familyId'):null},{headers:{'Cache-Control':'private, no-store'}})
  }catch{return NextResponse.json({error:'Falha ao consultar família.'},{status:500})}
+}
+
+export async function DELETE(request:Request,{params}:{params:{id:string}}){
+ if(!(await isOperationalModuleEnabled('students'))||!isFirebaseAdminConfigured()||!isFieldEncryptionConfigured())return NextResponse.json({error:'Registos indisponíveis.'},{status:503})
+ const actor=await requireAreaAdmin(request)
+ if(!actor)return NextResponse.json({error:'Sem permissão.'},{status:403})
+ if(!/^[a-f0-9]{64}$/.test(params.id))return NextResponse.json({error:'Aluno inválido.'},{status:400})
+ try{
+  const db=getFirebaseAdminFirestore(),link=db.collection('area_family_student_links').doc(params.id)
+  const result=await db.runTransaction(async tx=>{
+   const current=await tx.get(link)
+   if(!current.exists)return 'missing'
+   const familyRef=db.collection('area_families').doc(current.get('familyId'))
+   const family=await tx.get(familyRef)
+   const at=new Date().toISOString()
+   tx.delete(link)
+   if(family.exists)tx.update(familyRef,{updatedAt:at,updatedBy:actor.uid})
+   appendAuditEvent(tx,db,{module:'family-links',action:'update',recordPath:link.path,actorUid:actor.uid,before:current.data(),after:null,at})
+   return 'removed'
+  })
+  return result==='missing'?NextResponse.json({error:'O aluno não tem agregado associado.'},{status:404}):NextResponse.json({status:'removed'})
+ }catch{return NextResponse.json({error:'Não foi possível remover o vínculo.'},{status:500})}
 }
