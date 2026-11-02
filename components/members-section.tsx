@@ -3,9 +3,10 @@
 import { useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowRight, UsersRound } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, Search, UsersRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import type { Membro } from "@/lib/firebase-firestore";
 import { useSiteContent } from "@/components/site-content-provider";
 import { SectionHeading } from "@/components/section-heading";
@@ -22,6 +23,16 @@ const initials = (name: string) =>
 export default function MembersSection() {
   const { members } = useSiteContent();
   const [showAll, setShowAll] = useState(false);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 6;
+  const filteredMembers = members.filter((member) =>
+    `${member.nome} ${member.cargo} ${member.descricao}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()),
+  );
+  const pageCount = Math.max(1, Math.ceil(filteredMembers.length / pageSize));
+  const visibleMembers = showAll
+    ? filteredMembers.slice((Math.min(page, pageCount) - 1) * pageSize, Math.min(page, pageCount) * pageSize)
+    : members.slice(0, 3);
 
   if (!members.length) return null;
 
@@ -45,8 +56,30 @@ export default function MembersSection() {
           ) : null}
         />
 
+        {showAll && (
+          <div className="mb-4 space-y-2">
+            <div className="relative mx-auto max-w-md">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+              <Input
+                type="search"
+                value={search}
+                onChange={(event) => { setSearch(event.target.value); setPage(1); }}
+                placeholder="Pesquisar por nome ou função"
+                aria-label="Pesquisar membros da equipa"
+                className="pl-9"
+              />
+            </div>
+            <p className="text-center text-xs text-muted-foreground" aria-live="polite">
+              {filteredMembers.length} {filteredMembers.length === 1 ? "membro encontrado" : "membros encontrados"}
+            </p>
+          </div>
+        )}
+
+        {showAll && filteredMembers.length === 0 && (
+          <p className="mb-4 rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">Não foram encontrados membros com essa pesquisa.</p>
+        )}
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {(showAll ? members : members.slice(0, 3)).map((member, index) => (
+          {visibleMembers.map((member, index) => (
             <motion.div
               key={member.id}
               initial={false}
@@ -96,6 +129,23 @@ export default function MembersSection() {
             </motion.div>
           ))}
         </div>
+        {showAll && (
+          <div className="mt-6">
+            {filteredMembers.length === 0 ? (
+              <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">Não foram encontrados membros com essa pesquisa.</p>
+            ) : (
+              <nav aria-label="Paginação de membros" className="flex items-center justify-center gap-3">
+                <Button variant="outline" size="sm" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page <= 1} aria-label="Página anterior">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground" aria-live="polite">Página {Math.min(page, pageCount)} de {pageCount} · {filteredMembers.length} membros</span>
+                <Button variant="outline" size="sm" onClick={() => setPage((current) => Math.min(pageCount, current + 1))} disabled={page >= pageCount} aria-label="Página seguinte">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </nav>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );
